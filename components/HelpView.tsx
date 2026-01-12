@@ -40,10 +40,10 @@ interface Donor {
 }
 
 const INITIAL_DONORS: Donor[] = [
-  { name: "Bunda Siti", amount: 25000, time: "2 jam lalu", avatar: "S", message: "Semangat ya min, aplikasinya bantu banget buat atur menu!" },
-  { name: "Mama Kenzo", amount: 10000, time: "5 jam lalu", avatar: "K", message: "Suka banget sama resep-resepnya." },
-  { name: "Sahabat Hemat", amount: 100000, time: "Yesterday", avatar: "H", message: "Super keren! Semoga makin banyak yang pakai." },
-  { name: "Bunda Rini", amount: 10000, time: "2 hari lalu", avatar: "R", message: "Bantu banget buat hemat belanja bulanan." },
+  { name: "Sahabat Siti", amount: 25000, time: "2 jam lalu", avatar: "S", message: "Semangat ya min, aplikasinya bantu banget buat atur menu!" },
+  { name: "Sahabat Kenzo", amount: 10000, time: "5 jam lalu", avatar: "K", message: "Suka banget sama resep-resepnya." },
+  { name: "Donatur Hemat", amount: 100000, time: "Yesterday", avatar: "H", message: "Super keren! Semoga makin banyak yang pakai." },
+  { name: "Sahabat Rini", amount: 10000, time: "2 hari lalu", avatar: "R", message: "Bantu banget buat hemat belanja bulanan." },
 ];
 
 export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -58,7 +58,7 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const faqs = [
     {
       question: "Apa itu AI Sahabat Belanja?",
-      answer: "AI Sahabat Belanja adalah asisten cerdas berbasis teknologi kecerdasan buatan terkini yang dirancang untuk membantu keluarga Indonesia merencanakan menu makan harian sesuai dengan budget, jumlah anggota keluarga, dan lokasi pasar masing-masing."
+      answer: "AI Sahabat Belanja adalah asisten cerdas berbasis teknologi kecerdasan buatan terkini yang dirancang untuk membantu masyarakat Indonesia merencanakan menu makan harian sesuai dengan budget, jumlah anggota keluarga, dan lokasi pasar masing-masing."
     },
     {
       question: "Kebijakan Privasi (Privacy Policy)",
@@ -67,7 +67,7 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <p>Kami sangat menghargai privasi Sahabat. Berikut adalah poin utama kebijakan kami:</p>
           <ul className="list-disc pl-4 space-y-1">
             <li><strong>Data Lokasi:</strong> Kami menggunakan data kota Anda semata-mata untuk memberikan estimasi harga pangan regional yang akurat melalui mesin AI Sahabat Belanja.</li>
-            <li><strong>Informasi Kontak:</strong> Nomor HP yang Sahabat masukkan hanya digunakan untuk sistem identifikasi akun agar data favorit dan riwayat tidak hilang.</li>
+            <li><strong>Informasi Kontak:</strong> Nomor HP yang dimasukkan hanya digunakan untuk sistem identifikasi akun agar data favorit dan riwayat tidak hilang.</li>
             <li><strong>Keamanan Data:</strong> Kami tidak pernah menjual atau membagikan data pribadi Sahabat kepada pihak ketiga untuk kepentingan iklan atau pemasaran.</li>
             <li><strong>Transaksi Donasi:</strong> Semua pembayaran donasi diproses secara aman melalui gerbang pembayaran resmi. Kami tidak menyimpan informasi kartu atau detail bank Sahabat.</li>
           </ul>
@@ -76,7 +76,7 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     },
     {
       question: "Kenapa harga di aplikasi berbeda dengan pasar saya?",
-      answer: "Harga yang ditampilkan adalah estimasi rata-rata regional yang diperbarui secara berkala oleh sistem AI kami. Karena harga pangan fluktuatif setiap harinya, Sahabat sangat disarankan menggunakan fitur 'Koreksi Harga' untuk menyesuaikan dengan harga di pasar langganan Sahabat."
+      answer: "Harga yang ditampilkan adalah estimasi rata-rata regional yang diperbarui secara berkala oleh sistem AI kami. Karena harga pangan fluktuatif setiap harinya, Sahabat sangat disarankan menggunakan fitur 'Koreksi Harga' untuk menyesuaikan dengan harga di pasar langganan Anda."
     },
     {
       question: "Apa perbedaan gaya hidup Sederhana, Normal, dan Mewah?",
@@ -127,7 +127,7 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="bg-gradient-to-br from-[#40916C] to-[#2D6A4F] p-8 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden group">
             <div className="relative z-10">
               <h4 className="text-lg font-black mb-1">Dukung Sahabat! ☕</h4>
-              <p className="text-[10px] font-bold opacity-80 mb-6 leading-relaxed">Donasi Bunda membantu kami terus mengupdate harga pasar & fitur AI gratis untuk semua.</p>
+              <p className="text-[10px] font-bold opacity-80 mb-6 leading-relaxed">Donasi Anda membantu kami terus mengupdate harga pasar & fitur AI gratis untuk semua.</p>
               
               {!showForm ? (
                 <>
@@ -155,10 +155,10 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </>
               ) : (
                 <div className="bg-white/10 p-5 rounded-3xl border border-white/20 animate-in zoom-in-95">
-                  <p className="text-[11px] font-black uppercase mb-4 text-center">Sudah Donasi? Yuk Tulis Pesan Bunda!</p>
+                  <p className="text-[11px] font-black uppercase mb-4 text-center">Sudah Donasi? Yuk Tulis Pesan Anda!</p>
                   <input 
                     type="text" 
-                    placeholder="Nama Bunda" 
+                    placeholder="Nama Sahabat" 
                     value={donorName}
                     onChange={(e) => setDonorName(e.target.value)}
                     className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-xs font-bold outline-none mb-3 placeholder:text-white/40"
@@ -233,7 +233,7 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <svg className="w-10 h-10 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             </div>
             <h4 className="text-xl font-black text-gray-800 mb-2">Punya Pengaduan?</h4>
-            <p className="text-xs font-medium text-gray-500 mb-6 leading-relaxed">Admin Sahabat Belanja siap membantu kendala teknis Sahabat via WhatsApp.</p>
+            <p className="text-xs font-medium text-gray-500 mb-6 leading-relaxed">Admin Sahabat Belanja siap membantu kendala teknis Anda via WhatsApp.</p>
             <a 
               href="https://wa.me/6285861324859?text=Halo%20Admin%20Sahabat%20Belanja%2C%20saya%20ingin%20mengadu%20atau%20bertanya..." 
               target="_blank" 

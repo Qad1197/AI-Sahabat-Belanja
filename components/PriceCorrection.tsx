@@ -41,7 +41,7 @@ export const PriceCorrection: React.FC<PriceCorrectionProps> = ({ city, priceOve
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
         </button>
         <div>
-          <h1 className="text-2xl font-black text-gray-800 tracking-tight">Koreksi Harga Warga</h1>
+          <h1 className="text-2xl font-black text-gray-800 tracking-tight">Koreksi Harga Pasar</h1>
           <p className="text-[10px] text-[#40916C] font-black uppercase tracking-[0.15em]">Bantu Sesuaikan Harga di {currentCity}</p>
         </div>
       </div>
@@ -65,7 +65,6 @@ export const PriceCorrection: React.FC<PriceCorrectionProps> = ({ city, priceOve
             </div>
           </div>
 
-          {/* Panduan Tata Cara Card */}
           <div className="bg-white p-7 rounded-[2rem] shadow-sm border border-gray-100 space-y-5">
              <div className="flex items-center gap-2.5 mb-2">
                 <div className="bg-orange-100 p-2 rounded-xl">
@@ -78,21 +77,21 @@ export const PriceCorrection: React.FC<PriceCorrectionProps> = ({ city, priceOve
                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#f2fcf6] text-[#40916C] font-black text-[11px] flex items-center justify-center border border-green-100 group-hover:bg-[#40916C] group-hover:text-white transition-colors">1</span>
                    <p className="text-[11px] font-semibold text-gray-500 leading-relaxed">
                      <span className="text-gray-800 font-bold block mb-0.5">Tentukan Lokasi & Cari Bahan</span>
-                     Pilih Wilayah di menu atas, lalu ketik nama bahan masakan yang ingin Bunda sesuaikan harganya di kolom pencarian.
+                     Pilih Wilayah di menu atas, lalu ketik nama bahan masakan yang ingin disesuaikan harganya di kolom pencarian.
                    </p>
                 </div>
                 <div className="flex gap-4 group">
                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#f2fcf6] text-[#40916C] font-black text-[11px] flex items-center justify-center border border-green-100 group-hover:bg-[#40916C] group-hover:text-white transition-colors">2</span>
                    <p className="text-[11px] font-semibold text-gray-500 leading-relaxed">
                      <span className="text-gray-800 font-bold block mb-0.5">Update Harga Pasar</span>
-                     Masukkan nominal harga satuan terbaru yang Bunda temukan di pasar atau toko langganan Bunda saat ini.
+                     Masukkan nominal harga satuan terbaru yang Anda temukan di pasar atau toko langganan saat ini.
                    </p>
                 </div>
                 <div className="flex gap-4 group">
                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#f2fcf6] text-[#40916C] font-black text-[11px] flex items-center justify-center border border-green-100 group-hover:bg-[#40916C] group-hover:text-white transition-colors">3</span>
                    <p className="text-[11px] font-semibold text-gray-500 leading-relaxed">
                      <span className="text-gray-800 font-bold block mb-0.5">Simpan Data</span>
-                     Klik tombol <span className="text-[#40916C] font-black uppercase tracking-tighter">centang hijau</span> agar sistem AI menyesuaikan estimasi belanja khusus untuk Bunda.
+                     Klik tombol <span className="text-[#40916C] font-black uppercase tracking-tighter">centang hijau</span> agar sistem AI menyesuaikan estimasi belanja khusus untuk Anda.
                    </p>
                 </div>
              </div>
@@ -100,8 +99,8 @@ export const PriceCorrection: React.FC<PriceCorrectionProps> = ({ city, priceOve
 
           <div className="bg-gradient-to-br from-[#40916C] via-[#52B788] to-[#2D6A4F] text-white p-7 rounded-[2rem] shadow-xl shadow-green-100 relative overflow-hidden group">
              <div className="relative z-10">
-                <h4 className="text-lg font-black mb-2 animate-pulse">Hebat Bund!</h4>
-                <p className="text-[10px] font-bold opacity-90 leading-relaxed">Setiap harga yang Bunda update akan membantu AI kami menghitung rencana belanja yang jauh lebih akurat.</p>
+                <h4 className="text-lg font-black mb-2 animate-pulse">Hebat Sahabat!</h4>
+                <p className="text-[10px] font-bold opacity-90 leading-relaxed">Setiap harga yang Anda update akan membantu AI kami menghitung rencana belanja yang jauh lebih akurat.</p>
              </div>
              <svg className="absolute -bottom-6 -right-6 w-32 h-32 opacity-10 transform rotate-12 group-hover:scale-110 transition-transform duration-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.45 12.15l-2.62 2.62c-.39.39-1.02.39-1.41 0L6.79 14.15c-.39-.39-.39-1.02 0-1.41.39-.39 1.02-.39 1.41 0L10 14.53V7c0-.55.45-1 1-1s1 .45 1 1v7.53l1.79-1.79c.39-.39 1.02-.39 1.41 0 .4.39.4 1.03.25 1.41z" /></svg>
           </div>
@@ -134,7 +133,7 @@ export const PriceCorrection: React.FC<PriceCorrectionProps> = ({ city, priceOve
                         <span className="text-lg font-bold text-gray-800 leading-none mb-1">{ing}</span>
                         <div className="flex items-center gap-1.5">
                            <span className={`text-[9px] font-bold uppercase tracking-widest ${override ? 'text-[#FB8500]' : 'text-gray-300'}`}>
-                             {override ? 'Harga Bunda' : 'Estimasi Regional'}
+                             {override ? 'Harga Anda' : 'Estimasi Regional'}
                            </span>
                            {override && <div className="w-1.5 h-1.5 rounded-full bg-[#FB8500] animate-pulse"></div>}
                         </div>
@@ -168,7 +167,7 @@ export const PriceCorrection: React.FC<PriceCorrectionProps> = ({ city, priceOve
               ) : (
                 <div className="py-24 text-center space-y-4">
                    <div className="text-5xl opacity-30">🧺</div>
-                   <p className="text-sm font-bold text-gray-400">Bahan tidak ditemukan Bund.<br/><span className="text-[10px] font-medium">Coba gunakan kata kunci lain.</span></p>
+                   <p className="text-sm font-bold text-gray-400">Bahan tidak ditemukan Sahabat.<br/><span className="text-[10px] font-medium">Coba gunakan kata kunci lain.</span></p>
                 </div>
               )}
             </div>

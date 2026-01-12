@@ -71,13 +71,16 @@ const generateLocalFallback = (prefs: UserPreferences): GenerationResult => {
       estimatedPrice: r.cost
     })),
     totalEstimatedCost: minPrice * prefs.durationDays * prefs.numberOfPeople,
-    budgetAnalysis: "AI sedang sibuk, menu disusun otomatis oleh Mesin Lokal Sahabat Belanja agar Bunda tetap bisa belanja hari ini.",
+    budgetAnalysis: "AI sedang sibuk atau API Key belum dipasang di Vercel. Menu ini disusun otomatis oleh database lokal Sahabat Belanja agar Bunda tetap bisa belanja hari ini.",
     tips: ["Gunakan bahan musiman untuk harga lebih hemat.", "Belanja di pasar tradisional pagi hari."],
     isFallback: true
   };
 };
 
 export const checkApiStatus = async (): Promise<{ status: 'ok' | 'error', message: string, model: string }> => {
+  if (!process.env.API_KEY || process.env.API_KEY === "undefined") {
+    return { status: 'error', message: 'API_KEY belum dipasang di Vercel Bunda', model: 'N/A' };
+  }
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = 'gemini-3-flash-preview';
   try {
@@ -93,8 +96,13 @@ export const checkApiStatus = async (): Promise<{ status: 'ok' | 'error', messag
 };
 
 export const generateMealPlan = async (prefs: UserPreferences, localOverrides?: Record<string, number>): Promise<GenerationResult> => {
+  // Cek apakah API_KEY ada sebelum inisialisasi
+  if (!process.env.API_KEY || process.env.API_KEY === "undefined" || process.env.API_KEY.length < 10) {
+    console.warn("API_KEY missing, using local fallback...");
+    return generateLocalFallback(prefs);
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
   const localPriceContext = localOverrides && Object.keys(localOverrides).length > 0 
     ? `Konteks Harga: ${Object.entries(localOverrides).map(([n, p]) => `${n}: ${p}`).join(', ')}` : "";
 
@@ -125,7 +133,7 @@ export const generateMealPlan = async (prefs: UserPreferences, localOverrides?: 
     return { ...JSON.parse(text), isFallback: false };
     
   } catch (error) {
-    console.warn("Gemini Error, switching to Local Fallback Engine...");
+    console.error("Gemini Critical Error:", error);
     return generateLocalFallback(prefs);
   }
 };

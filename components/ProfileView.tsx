@@ -102,115 +102,6 @@ const RECIPE_POOL = [
       "Tuangkan santan, masak dengan api kecil sambil terus diaduk perlahan.",
       "Masak hingga kuah mengering dan bumbu meresap hitam sempurna (4-5 jam)."
     ]
-  },
-  {
-    title: "Gado-Gado Siram",
-    totalCost: 32000,
-    description: "Salad khas Indonesia dengan bumbu kacang yang kental dan isian sayur yang menyehatkan.",
-    ingredients: [
-      { name: "Kacang Tanah Sangrai", qty: "200 gr", price: 8000 },
-      { name: "Sayuran (Bayam, Kol, Toge)", qty: "1 paket", price: 10000 },
-      { name: "Tahu & Tempe", qty: "1 kotak", price: 6000 },
-      { name: "Lontong/Ketupat", qty: "2 buah", price: 5000 },
-      { name: "Gula Merah & Asam", qty: "1 paket", price: 3000 }
-    ],
-    steps: [
-      "Rebus semua sayuran hingga matang, tiriskan.",
-      "Goreng tahu dan tempe, potong-potong.",
-      "Haluskan kacang tanah, campur dengan gula merah, asam jawa, dan air hangat.",
-      "Tata lontong, sayuran, tahu, dan tempe di piring.",
-      "Siram dengan bumbu kacang dan beri kerupuk di atasnya."
-    ]
-  },
-  {
-    title: "Ikan Bakar Cianjur",
-    totalCost: 55000,
-    description: "Ikan mas atau nila bakar dengan bumbu kecap pedas manis yang meresap.",
-    ingredients: [
-      { name: "Ikan Nila/Mas", qty: "2 ekor besar", price: 40000 },
-      { name: "Kecap Manis", qty: "1 botol kecil", price: 6000 },
-      { name: "Bumbu Bakar (Bawang, Cabai)", qty: "1 paket", price: 7000 },
-      { name: "Lalapan Segar", qty: "1 ikat", price: 2000 }
-    ],
-    steps: [
-      "Bersihkan ikan, lumuri dengan air jeruk nipis untuk menghilangkan amis.",
-      "Tumis bumbu halus, campurkan dengan kecap manis.",
-      "Oleskan bumbu ke seluruh bagian ikan.",
-      "Bakar ikan di atas arang atau teflon hingga matang sambil terus dioles bumbu.",
-      "Sajikan hangat dengan sambal terasi dan lalapan."
-    ]
-  },
-  {
-    title: "Orak Arik Telur Tempe",
-    totalCost: 18000,
-    description: "Menu super hemat tanggal tua tapi tetap kaya protein dan sangat disukai anak-anak.",
-    ingredients: [
-      { name: "Telur Ayam", qty: "3 butir", price: 6000 },
-      { name: "Tempe", qty: "1 papan", price: 5000 },
-      { name: "Bawang & Cabai", qty: "1 paket", price: 4000 },
-      { name: "Kecap & Garam", qty: "1 paket", price: 3000 }
-    ],
-    steps: [
-      "Potong tempe kecil-kecil, goreng hingga setengah matang.",
-      "Tumis bawang merah, bawang putih, dan cabai hingga harum.",
-      "Masukkan telur, buat orak-arik.",
-      "Masukkan tempe goreng, tambahkan kecap manis dan sedikit garam.",
-      "Aduk rata hingga bumbu meresap, sajikan segera."
-    ]
-  },
-  {
-    title: "Capcay Goreng Bakso",
-    totalCost: 35000,
-    description: "Menu sayuran lengkap dengan tambahan bakso sapi yang gurih.",
-    ingredients: [
-      { name: "Sayur Capcay Komplit", qty: "1 paket", price: 15000 },
-      { name: "Bakso Sapi", qty: "10 butir", price: 12000 },
-      { name: "Saus Tiram & Maizena", qty: "1 paket", price: 5000 },
-      { name: "Bumbu Putih", qty: "1 paket", price: 3000 }
-    ],
-    steps: [
-      "Potong-potong sayuran dan belah bakso sapi.",
-      "Tumis bawang putih hingga harum, masukkan bakso.",
-      "Masukkan sayuran yang keras (wortel) terlebih dahulu, beri sedikit air.",
-      "Masukkan sisa sayuran, saus tiram, gula, dan garam.",
-      "Tambahkan larutan maizena agar kuah sedikit mengental, angkat."
-    ]
-  },
-  {
-    title: "Pepes Tahu Jamur",
-    totalCost: 24000,
-    description: "Masakan kukus yang sehat, bebas minyak, dan aromanya sangat menggugah selera.",
-    ingredients: [
-      { name: "Tahu Putih", qty: "5 kotak", price: 8000 },
-      { name: "Jamur Tiram", qty: "200 gr", price: 7000 },
-      { name: "Daun Pisang", qty: "2 lembar", price: 3000 },
-      { name: "Bumbu Pepes & Kemangi", qty: "1 paket", price: 6000 }
-    ],
-    steps: [
-      "Haluskan tahu putih, campur dengan jamur tiram yang sudah disuwir.",
-      "Aduk rata dengan bumbu pepes halus dan daun kemangi.",
-      "Bungkus adonan dengan daun pisang, sematkan lidi.",
-      "Kukus selama 30 menit hingga matang.",
-      "Bakar sebentar di atas teflon agar aroma daun pisang lebih keluar."
-    ]
-  },
-  {
-    title: "Sop Iga Sapi",
-    totalCost: 88000,
-    description: "Menu istimewa akhir pekan. Kuah bening yang kaldu sapinya sangat terasa.",
-    ingredients: [
-      { name: "Iga Sapi", qty: "500 gr", price: 75000 },
-      { name: "Wortel & Kentang", qty: "2 buah", price: 5000 },
-      { name: "Bumbu Sop (Pala, Kayumanis)", qty: "1 paket", price: 5000 },
-      { name: "Daun Bawang & Seledri", qty: "1 ikat", price: 3000 }
-    ],
-    steps: [
-      "Rebus iga sapi hingga kotorannya keluar, buang air rebusan pertama.",
-      "Rebus kembali dengan air baru hingga daging iga empuk (gunakan presto jika ada).",
-      "Masukkan wortel dan kentang.",
-      "Tumis bumbu sop halus, masukkan ke dalam rebusan iga.",
-      "Taburkan daun bawang, seledri, dan bawang goreng sebelum disajikan."
-    ]
   }
 ];
 
@@ -219,10 +110,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
   const [diagLoading, setDiagLoading] = useState(false);
   const [diagResult, setDiagResult] = useState<{status: string, message: string, model: string} | null>(null);
 
-  // Algoritma untuk memastikan resep berubah tepat setiap hari 00:00 waktu lokal
   const todayRecipe = useMemo(() => {
     const now = new Date();
-    // Gunakan format YYYYMMDD sebagai seed agar konsisten seharian penuh
     const dateSeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
     const index = dateSeed % RECIPE_POOL.length;
     return RECIPE_POOL[index];
@@ -286,7 +175,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
 
   const renderDashboard = () => (
     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-      {/* AI Diagnostic Card */}
       <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm">
         <div className="flex justify-between items-center mb-5">
            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status Sistem AI</h4>
@@ -339,7 +227,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
             <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg mb-2">Hemat {savingsPercent}%</span>
           </div>
           <p className="text-xs font-medium opacity-90 leading-relaxed">
-            "Hebat! Bulan ini Sahabat berhasil menyisihkan dana dari budget belanja. Pertahankan masak sendiri untuk maksimalkan tabungan!"
+            "Hebat! Bulan ini Sahabat berhasil menyisihkan dana dari budget belanja. Pertahankan manajemen belanja mandiri untuk maksimalkan tabungan!"
           </p>
         </div>
       </div>
@@ -356,39 +244,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Perkiraan Total Biaya</span>
                <span className="text-3xl font-black tracking-tighter">{formatRupiah(todayRecipe.totalCost)}</span>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="bg-white text-gray-800 p-6 rounded-[2rem] shadow-sm">
-                <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                  Rincian Bahan
-                </h4>
-                <div className="space-y-3">
-                  {todayRecipe.ingredients.map((ing, i) => (
-                    <div key={i} className="flex justify-between items-center text-xs border-b border-gray-100 last:border-0 pb-2.5 last:pb-0">
-                      <div>
-                        <span className="font-bold block text-gray-700">{ing.name}</span>
-                        <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider">{ing.qty}</span>
-                      </div>
-                      <span className="font-mono font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg">{formatRupiah(ing.price)}</span>
-                    </div>
-                  ))}
-                </div>
-             </div>
-             <div className="bg-black/20 p-6 rounded-[2rem] border border-white/10 backdrop-blur-md">
-                <h4 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
-                  Langkah Memasak
-                </h4>
-                <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 scrollbar-hide">
-                  {todayRecipe.steps.map((step, i) => (
-                    <div key={i} className="flex gap-4">
-                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white text-orange-600 font-black text-[10px] flex items-center justify-center shadow-md">{i+1}</span>
-                      <p className="text-xs font-semibold text-white/90 leading-relaxed pt-1">{step}</p>
-                    </div>
-                  ))}
-                </div>
-             </div>
           </div>
         </div>
       </div>
@@ -480,7 +335,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
       <div className="text-center px-10 mt-4">
          <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest flex items-center justify-center gap-2">
            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-           Data Bunda tersimpan aman di perangkat ini.
+           Data Anda tersimpan aman di perangkat ini.
          </p>
       </div>
     </div>

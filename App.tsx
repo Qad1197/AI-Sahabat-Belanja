@@ -13,10 +13,10 @@ export const formatNumber = (val: number) => new Intl.NumberFormat('id-ID').form
 export const formatRupiah = (val: number) => `Rp ${formatNumber(val)}`;
 
 const LOADING_MESSAGES = [
-  "Hai Bund! Sabar ya, lagi pilih sayur paling segar...",
+  "Hai Sahabat! Sabar ya, lagi pilih sayur paling segar...",
   "Lagi susun resep sehat buat keluarga tercinta...",
   "Cek harga pasar terupdate di lokasimu dulu ya...",
-  "Menghitung nutrisi biar anak-anak tumbuh kuat...",
+  "Menghitung nutrisi biar badan tetap kuat & sehat...",
   "Ngerancang menu hemat tapi tetap istimewa..."
 ];
 
@@ -28,6 +28,11 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [tutorialStep, setTutorialStep] = useState<number | null>(null);
   
+  const [stats, setStats] = useState({
+    visitors: 12842,
+    plansCreated: 8291
+  });
+
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('asb_user_profile');
     return saved ? JSON.parse(saved) : null;
@@ -53,6 +58,16 @@ const App: React.FC = () => {
   const [locationSearch, setLocationSearch] = useState('');
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStats(prev => ({
+        visitors: prev.visitors + Math.floor(Math.random() * 2),
+        plansCreated: prev.plansCreated + (Math.random() > 0.7 ? 1 : 0)
+      }));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('asb_tutorial_seen');
@@ -98,13 +113,13 @@ const App: React.FC = () => {
     let status: 'danger' | 'warning' | 'success' = 'success';
     let message = 'Budget Ideal';
     let alasan = 'Budget cukup untuk standar gizi 4 sehat 5 sempurna dengan protein hewani berkualitas.';
-    let pertimbangan = 'Bunda bisa lebih leluasa memilih variasi menu mingguan dan menyisipkan buah segar setiap hari.';
+    let pertimbangan = 'Anda bisa lebih leluasa memilih variasi menu mingguan dan menyisipkan buah segar setiap hari.';
     
     if (costPerMeal < minRational * 0.75) {
       status = 'danger';
       message = 'Terlalu Rendah';
       alasan = 'Anggaran di bawah rata-rata biaya hidup sehat di wilayah ini. Berisiko kurang gizi seimbang.';
-      pertimbangan = 'Sebaiknya Bunda menambah anggaran atau kurangi durasi hari agar kualitas masakan tetap terjaga.';
+      pertimbangan = 'Sebaiknya Anda menambah anggaran atau kurangi durasi hari agar kualitas masakan tetap terjaga.';
     } else if (costPerMeal < minRational) {
       status = 'warning';
       message = 'Sangat Hemat';
@@ -134,7 +149,7 @@ const App: React.FC = () => {
     try {
       const newUser: UserProfile = {
         email: phoneInput,
-        name: isAdmin ? "Administrator" : phoneInput,
+        name: isAdmin ? "Administrator" : "User-" + phoneInput.slice(-4),
         role: isAdmin ? 'admin' : 'user',
         photo: `https://ui-avatars.com/api/?name=${isAdmin ? "Admin" : phoneInput}&background=${isAdmin ? '000' : '40916C'}&color=fff`,
         favorites: [],
@@ -144,7 +159,7 @@ const App: React.FC = () => {
       setPhoneInput("");
       if (isAdmin) setActiveView('admin');
     } catch (err) {
-      setError("Login gagal. Periksa nomor Bunda ya!");
+      setError("Login gagal. Periksa nomor Anda ya!");
     } finally {
       setAuthLoading(false);
     }
@@ -166,7 +181,8 @@ const App: React.FC = () => {
       const data = await generateMealPlan(prefs, priceOverrides[prefs.city]);
       setResult(data);
     } catch (err: any) {
-      setError("Duh Bund, server lagi sibuk nih. Coba lagi sebentar ya!");
+      console.error("Critical Failure:", err);
+      setError("Duh Sahabat, ada kendala teknis. Coba cek koneksi Anda ya!");
     } finally {
       setLoading(false);
     }
@@ -179,27 +195,44 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-40 bg-[#fdfdfb]">
+      <div className="bg-[#FB8500]/5 border-b border-orange-100 py-2 overflow-hidden whitespace-nowrap sticky top-0 z-[60] glass">
+         <div className="max-w-4xl mx-auto px-5 flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2">
+               <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                  Live: <span className="text-gray-800">{formatNumber(stats.visitors)} Sahabat</span> sedang berkunjung
+               </span>
+            </div>
+            <div className="w-px h-3 bg-orange-200"></div>
+            <div className="flex items-center gap-2">
+               <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                  🔥 <span className="text-[#40916C]">{formatNumber(stats.plansCreated)} Menu</span> berhasil disusun hari ini
+               </span>
+            </div>
+         </div>
+      </div>
+
       {tutorialStep !== null && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 flex flex-col items-center justify-center p-6">
           <div className="max-w-xs w-full bg-white rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in-95 duration-500 relative">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white p-4 rounded-full shadow-lg">
               <span className="text-3xl">
-                {tutorialStep === 1 ? '📍' : tutorialStep === 2 ? '💰' : tutorialStep === 3 ? '👨‍👩‍👧' : '🚀'}
+                {tutorialStep === 1 ? '📍' : tutorialStep === 2 ? '💰' : tutorialStep === 3 ? '👥' : '🚀'}
               </span>
             </div>
             
             <div className="text-center mt-4">
               <h3 className="text-lg font-black text-gray-800 mb-2 leading-tight">
-                {tutorialStep === 1 && "Tentukan Lokasi Bunda"}
+                {tutorialStep === 1 && "Tentukan Lokasi"}
                 {tutorialStep === 2 && "Tentukan Budget Belanja"}
-                {tutorialStep === 3 && "Gaya Hidup & Keluarga"}
+                {tutorialStep === 3 && "Gaya Hidup & Anggota"}
                 {tutorialStep === 4 && "Mulai Susun Menu!"}
               </h3>
               <p className="text-xs font-medium text-gray-500 leading-relaxed mb-8">
-                {tutorialStep === 1 && "Pilih kota tempat Bunda belanja agar AI Sahabat bisa menyesuaikan harga pangan lokal yang paling akurat."}
-                {tutorialStep === 2 && "Masukkan total anggaran belanja Bunda. AI akan memastikan gizi keluarga terpenuhi dalam budget ini."}
-                {tutorialStep === 3 && "Atur gaya hidup (Sederhana/Mewah) dan berapa jumlah orang yang akan makan masakan Bunda."}
-                {tutorialStep === 4 && "Klik tombol hijau besar di bawah untuk membiarkan asisten AI menyusun resep hemat & sehat untuk Bunda."}
+                {tutorialStep === 1 && "Pilih kota tempat Anda belanja agar AI Sahabat bisa menyesuaikan harga pangan lokal yang paling akurat."}
+                {tutorialStep === 2 && "Masukkan total anggaran belanja Anda. AI akan memastikan gizi keluarga terpenuhi dalam budget ini."}
+                {tutorialStep === 3 && "Atur gaya hidup (Sederhana/Mewah) dan berapa jumlah orang yang akan menikmati masakan Anda."}
+                {tutorialStep === 4 && "Klik tombol hijau besar di bawah untuk membiarkan asisten AI menyusun resep hemat & sehat untuk Anda."}
               </p>
               
               <div className="flex flex-col gap-2">
@@ -224,7 +257,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <header className="glass border-b border-gray-100 sticky top-0 z-50">
+      <header className="glass border-b border-gray-100 sticky top-[33px] z-50">
         <div className="max-w-4xl mx-auto px-5 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => {setResult(null); setActiveView('home');}}>
             <div className="relative">
@@ -262,7 +295,7 @@ const App: React.FC = () => {
               <form onSubmit={handleSubmit} className="bg-white p-7 rounded-[3rem] shadow-xl shadow-green-900/5 border border-gray-50 space-y-7 animate-in fade-in zoom-in-95 duration-500">
                 <div className="space-y-6">
                   <div className={`bg-[#f2fcf6] p-6 rounded-[2.5rem] border border-green-50 relative transition-all duration-500 ${tutorialStep === 1 ? 'ring-4 ring-green-400 shadow-xl z-[110] bg-white' : ''}`} ref={locationDropdownRef}>
-                     <label className="text-[11px] font-bold text-[#40916C] uppercase tracking-[0.1em] block mb-3">🛍️ Lokasi Belanja Bund</label>
+                     <label className="text-[11px] font-bold text-[#40916C] uppercase tracking-[0.1em] block mb-3">🛍️ Tentukan Lokasi Belanja</label>
                      <div className="w-full bg-transparent font-bold text-gray-800 text-lg flex items-center justify-between cursor-pointer group" onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}>
                         <span className="truncate group-hover:text-[#40916C] transition-colors">{prefs.city}</span>
                         <svg className={`w-5 h-5 transition-transform text-[#40916C] ${isLocationDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
@@ -286,7 +319,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className={`bg-[#fff9f2] p-6 rounded-[2.5rem] border border-orange-50 group transition-all ${tutorialStep === 2 ? 'ring-4 ring-orange-400 shadow-xl z-[110] bg-white' : ''}`}>
-                      <label className="text-[11px] font-bold text-[#FB8500] uppercase tracking-[0.1em] block mb-3">💰 Budget Bunda (Rp)</label>
+                      <label className="text-[11px] font-bold text-[#FB8500] uppercase tracking-[0.1em] block mb-3">💰 Tentukan Budget Belanja (Rp)</label>
                       <input type="text" inputMode="numeric" value={formatNumber(prefs.budget)} onChange={(e) => { const val = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setPrefs({...prefs, budget: val}); }} className="w-full bg-transparent font-bold text-[#FB8500] outline-none text-2xl" />
                     </div>
                     <div className={`bg-[#f2fcf6] p-6 rounded-[2.5rem] border border-green-50 transition-all ${tutorialStep === 3 ? 'ring-4 ring-green-400 shadow-xl z-[110] bg-white' : ''}`}>
@@ -300,27 +333,29 @@ const App: React.FC = () => {
                        </div>
                     </div>
                   </div>
-                  <div className={`grid grid-cols-3 gap-4 transition-all ${tutorialStep === 3 ? 'ring-4 ring-blue-400 p-2 rounded-[2.5rem] shadow-xl z-[110] bg-white' : ''}`}>
-                    <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100 text-center">
-                       <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Hari</label>
-                       <input type="number" value={prefs.durationDays} onChange={(e) => setPrefs({...prefs, durationDays: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-bold text-xl outline-none" />
+
+                  <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 transition-all ${tutorialStep === 3 ? 'ring-4 ring-blue-400 p-2 rounded-[2.5rem] shadow-xl z-[110] bg-white' : ''}`}>
+                    <div className="bg-white p-6 rounded-[2.5rem] border-2 border-blue-200 shadow-md hover:shadow-lg hover:border-blue-400 transition-all text-center">
+                       <label className="text-[9px] font-black text-blue-500 uppercase block mb-3 tracking-widest leading-tight h-8 flex items-center justify-center">UNTUK BERAPA HARI</label>
+                       <input type="number" value={prefs.durationDays} onChange={(e) => setPrefs({...prefs, durationDays: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-black text-2xl outline-none text-gray-800" />
                     </div>
-                    <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100 text-center">
-                       <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Makan</label>
-                       <input type="number" value={prefs.portionsPerMeal} onChange={(e) => setPrefs({...prefs, portionsPerMeal: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-bold text-xl outline-none" />
+                    <div className="bg-white p-6 rounded-[2.5rem] border-2 border-blue-200 shadow-md hover:shadow-lg hover:border-blue-400 transition-all text-center">
+                       <label className="text-[9px] font-black text-blue-500 uppercase block mb-3 tracking-widest leading-tight h-8 flex items-center justify-center">SEHARI BERAPA KALI MAKAN</label>
+                       <input type="number" value={prefs.portionsPerMeal} onChange={(e) => setPrefs({...prefs, portionsPerMeal: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-black text-2xl outline-none text-gray-800" />
                     </div>
-                    <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100 text-center">
-                       <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Orang</label>
-                       <input type="number" value={prefs.numberOfPeople} onChange={(e) => setPrefs({...prefs, numberOfPeople: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-bold text-xl outline-none" />
+                    <div className="bg-white p-6 rounded-[2.5rem] border-2 border-blue-200 shadow-md hover:shadow-lg hover:border-blue-400 transition-all text-center">
+                       <label className="text-[9px] font-black text-blue-500 uppercase block mb-3 tracking-widest leading-tight h-8 flex items-center justify-center">BERAPA ORANG PER 1X MAKAN</label>
+                       <input type="number" value={prefs.numberOfPeople} onChange={(e) => setPrefs({...prefs, numberOfPeople: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-black text-2xl outline-none text-gray-800" />
                     </div>
                   </div>
+
                   <div className={`p-6 rounded-[2.5rem] border-2 transition-all duration-500 ${budgetAnalysis.status === 'danger' ? 'bg-red-50 border-red-100' : budgetAnalysis.status === 'warning' ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100'}`}>
                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Analisis Sahabat Bunda</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Analisis Sahabat Belanja</span>
                         <div className={`px-3 py-1.5 rounded-full text-[9px] font-bold text-white uppercase shadow-sm ${budgetAnalysis.status === 'danger' ? 'bg-red-500' : budgetAnalysis.status === 'warning' ? 'bg-[#FB8500]' : 'bg-[#40916C]'}`}>{budgetAnalysis.status === 'danger' ? '⚠️' : budgetAnalysis.status === 'warning' ? '💡' : '✅'} {budgetAnalysis.message}</div>
                      </div>
                      <p className="text-2xl font-bold text-gray-800 tracking-tight leading-none">{formatRupiah(Math.round(budgetAnalysis.costPerMeal))} <span className="text-[11px] text-gray-400 font-semibold uppercase">/ porsi</span></p>
-                     <p className="text-[10px] font-semibold text-gray-400 mt-2 uppercase tracking-wide opacity-80">Minimal di daerah ini: {formatRupiah(budgetAnalysis.minRational)}</p>
+                     <p className="text-[10px] font-bold text-blue-900 mt-2 uppercase tracking-wide">Minimal di daerah ini: {formatRupiah(budgetAnalysis.minRational)}</p>
                      <div className="space-y-2 border-t border-black/5 pt-4 mt-4">
                         <p className="text-xs font-semibold text-gray-600 leading-relaxed"><span className="text-[10px] font-black uppercase text-gray-400 mr-2">Alasan:</span>{budgetAnalysis.alasan}</p>
                         <p className="text-xs font-semibold text-gray-600 leading-relaxed italic"><span className="text-[10px] font-black uppercase text-gray-400 mr-2">Saran:</span>{budgetAnalysis.pertimbangan}</p>
@@ -328,7 +363,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <button type="submit" disabled={budgetAnalysis.isDisabled} className={`w-full py-5 rounded-[2.5rem] font-bold text-sm uppercase tracking-widest shadow-2xl transition-all transform active:scale-95 ${budgetAnalysis.isDisabled ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#40916C] to-[#52B788] text-white animate-vibrant'} ${tutorialStep === 4 ? 'ring-4 ring-green-400 scale-105 z-[110]' : ''}`}>
-                  {budgetAnalysis.isDisabled ? 'Budget Terlalu Rendah' : 'Susun Rencana Menu Bunda! 🥦'}
+                  {budgetAnalysis.isDisabled ? 'Budget Terlalu Rendah' : 'Susun Rencana Menu Sahabat! 🥦'}
                 </button>
               </form>
             )}
@@ -336,7 +371,7 @@ const App: React.FC = () => {
             {loading && (
               <div className="flex flex-col items-center justify-center py-24 text-center space-y-8 animate-in fade-in zoom-in-95 duration-500">
                 <div className="relative"><div className="w-24 h-24 border-[6px] border-[#f2fcf6] border-t-[#40916C] rounded-full animate-spin"></div><div className="absolute inset-0 flex items-center justify-center text-3xl">🍲</div></div>
-                <div className="space-y-3 px-10"><p className="text-xl font-bold text-gray-800">Sabar ya Bund...</p><p className="font-semibold text-[#40916C] italic text-sm leading-relaxed">"{LOADING_MESSAGES[loadingMsgIdx]}"</p></div>
+                <div className="space-y-3 px-10"><p className="text-xl font-bold text-gray-800">Sabar ya Sahabat...</p><p className="font-semibold text-[#40916C] italic text-sm leading-relaxed">"{LOADING_MESSAGES[loadingMsgIdx]}"</p></div>
               </div>
             )}
 
@@ -350,10 +385,10 @@ const App: React.FC = () => {
              {!user ? (
                <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-50 flex flex-col items-center text-center">
                  <div className="bg-[#f2fcf6] p-7 rounded-full mb-8 shadow-inner"><svg className="w-12 h-12 text-[#40916C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div>
-                 <h2 className="text-2xl font-bold text-gray-800 mb-3 tracking-tight">Masuk Bunda</h2>
-                 <p className="text-sm text-gray-400 font-semibold mb-10 px-4 leading-relaxed">Simpan menu favorit Bunda & riwayat belanja dengan aman.</p>
+                 <h2 className="text-2xl font-bold text-gray-800 mb-3 tracking-tight">Masuk Sahabat</h2>
+                 <p className="text-sm text-gray-400 font-semibold mb-10 px-4 leading-relaxed">Simpan menu favorit & riwayat belanja Anda dengan aman.</p>
                  <form onSubmit={handlePhoneLogin} className="w-full space-y-5">
-                   <input type="tel" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="Masukkan No. HP Bunda" className="w-full px-8 py-5 bg-[#f8faf7] border border-gray-100 rounded-[2rem] outline-none font-bold text-gray-800 focus:ring-4 focus:ring-[#40916C]/10 text-center tracking-wide text-lg transition-all" />
+                   <input type="tel" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="Masukkan No. HP Sahabat" className="w-full px-8 py-5 bg-[#f8faf7] border border-gray-100 rounded-[2rem] outline-none font-bold text-gray-800 focus:ring-4 focus:ring-[#40916C]/10 text-center tracking-wide text-lg transition-all" />
                    <button type="submit" disabled={authLoading} className="w-full py-5 bg-[#40916C] text-white rounded-[2rem] font-bold uppercase tracking-widest shadow-xl transition-all disabled:opacity-50 text-xs">{authLoading ? 'Memproses...' : 'Lanjut Sekarang'}</button>
                  </form>
                </div>
@@ -368,10 +403,10 @@ const App: React.FC = () => {
         <footer className="mt-16 mb-8 text-center px-6">
           <div className="w-12 h-1 bg-gradient-to-r from-green-100 via-green-200 to-green-100 rounded-full mx-auto mb-6"></div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 mb-2">
-            © 2026 QADRYANSYAH STUDIO WPR • V.13 RILIS VERCEL
+            © 2026 QADRYANSYAH STUDIO WPR • V.13.2 RILIS VERCEL
           </p>
           <p className="text-xs font-bold text-gray-400 leading-relaxed italic">
-            Dibuat dengan Cinta untuk <span className="text-[#FB8500]">Muga</span> dan seluruh Ibu di Indonesia.
+            Dibuat dengan Cinta untuk <span className="text-[#FB8500]">Muga</span> dan seluruh keluarga di Indonesia.
           </p>
         </footer>
       </main>
