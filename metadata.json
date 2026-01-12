@@ -1,0 +1,7 @@
+{
+  "name": "Copy of AI Sahabat Belanja 12",
+  "description": "Asisten cerdas perencana belanja keluarga Indonesia yang hemat & sehat. Teman setia ke pasar!",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
