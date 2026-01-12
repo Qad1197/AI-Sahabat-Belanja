@@ -2,6 +2,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserPreferences, GenerationResult } from "../types";
 
+// Pastikan TypeScript mengenali process.env di environment browser/build
+declare var process: {
+  env: {
+    API_KEY: string;
+  };
+};
+
 export const checkApiStatus = async (): Promise<{ status: 'ok' | 'error', message: string, model: string }> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = 'gemini-3-flash-preview';
