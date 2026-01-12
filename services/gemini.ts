@@ -1,11 +1,79 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { UserPreferences, GenerationResult } from "../types";
+import { UserPreferences, GenerationResult, Lifestyle } from "../types";
+import { getMinRationalPrice } from "../constants";
 
-// Pastikan TypeScript mengenali process.env di environment browser/build
 declare var process: {
   env: {
     API_KEY: string;
+  };
+};
+
+// Database Menu Lokal Variatif (Fallback)
+const FALLBACK_RECIPES = {
+  [Lifestyle.SEDERHANA]: [
+    { title: "Tempe Orek & Sayur Bening", protein: "Tempe", veg: "Bayam", cost: 15000 },
+    { title: "Tahu Bacem & Cah Kangkung", protein: "Tahu", veg: "Kangkung", cost: 12000 },
+    { title: "Telur Dadar & Sop Sayur", protein: "Telur", veg: "Wortel/Kol", cost: 18000 },
+    { title: "Pecel Sayur & Bakwan Tahu", protein: "Tahu", veg: "Aneka Sayur", cost: 14000 }
+  ],
+  [Lifestyle.NORMAL]: [
+    { title: "Ayam Goreng & Sayur Asem", protein: "Ayam", veg: "Labu/Kacang", cost: 35000 },
+    { title: "Ikan Kembung & Sop Kimlo", protein: "Ikan", veg: "Jamur/Wortel", cost: 40000 },
+    { title: "Semur Telur & Capcay", protein: "Telur", veg: "Aneka Sayur", cost: 30000 },
+    { title: "Ayam Kecap & Tumis Buncis", protein: "Ayam", veg: "Buncis", cost: 38000 }
+  ],
+  [Lifestyle.MEWAH]: [
+    { title: "Rendang Sapi & Gulai Daun Singkong", protein: "Daging Sapi", veg: "Daun Singkong", cost: 85000 },
+    { title: "Ikan Nila Bakar & Cah Kailan", protein: "Ikan Nila", veg: "Kailan", cost: 65000 },
+    { title: "Soto Betawi & Perkedel", protein: "Daging Sapi", veg: "Kentang", cost: 75000 },
+    { title: "Daging Balado & Terong Balado", protein: "Daging Sapi", veg: "Terong", cost: 80000 }
+  ]
+};
+
+const generateLocalFallback = (prefs: UserPreferences): GenerationResult => {
+  const dailyPlans = [];
+  const recipes = FALLBACK_RECIPES[prefs.lifestyle] || FALLBACK_RECIPES[Lifestyle.NORMAL];
+  const minPrice = getMinRationalPrice(prefs.city, prefs.lifestyle);
+  
+  for (let d = 1; d <= prefs.durationDays; d++) {
+    const mealIdx = (d - 1) % recipes.length;
+    const recipe = recipes[mealIdx];
+    
+    const mealTemplate = {
+      title: recipe.title,
+      ingredients: [
+        { name: recipe.protein, quantity: "Porsi Keluarga", unitPrice: Math.round(recipe.cost * 0.7), totalPrice: Math.round(recipe.cost * 0.7) },
+        { name: recipe.veg, quantity: "1 Ikat/Bks", unitPrice: Math.round(recipe.cost * 0.3), totalPrice: Math.round(recipe.cost * 0.3) }
+      ],
+      nutrition: { 
+        calories: prefs.lifestyle === Lifestyle.SEDERHANA ? 600 : 850, 
+        protein: prefs.lifestyle === Lifestyle.SEDERHANA ? 20 : 35, 
+        carbs: 100 
+      }
+    };
+
+    dailyPlans.push({
+      day: d,
+      breakfast: { ...mealTemplate, title: "Sarapan " + recipe.protein },
+      lunch: mealTemplate,
+      dinner: { ...mealTemplate, title: "Makan Malam " + recipe.protein },
+      dailyTotal: { calories: mealTemplate.nutrition.calories * 3, protein: mealTemplate.nutrition.protein * 3, carbs: 300 }
+    });
+  }
+
+  return {
+    dailyPlans,
+    shoppingList: recipes.map(r => ({
+      name: r.protein,
+      quantity: prefs.durationDays + " porsi",
+      category: 'Protein',
+      estimatedPrice: r.cost
+    })),
+    totalEstimatedCost: minPrice * prefs.durationDays * prefs.numberOfPeople,
+    budgetAnalysis: "AI sedang sibuk, menu disusun otomatis oleh Mesin Lokal Sahabat Belanja agar Bunda tetap bisa belanja hari ini.",
+    tips: ["Gunakan bahan musiman untuk harga lebih hemat.", "Belanja di pasar tradisional pagi hari."],
+    isFallback: true
   };
 };
 
@@ -13,25 +81,14 @@ export const checkApiStatus = async (): Promise<{ status: 'ok' | 'error', messag
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = 'gemini-3-flash-preview';
   try {
-    // Test panggilan ringan untuk cek API & Billing
     const response = await ai.models.generateContent({
       model: modelName,
       contents: 'Ping',
-      config: { 
-        maxOutputTokens: 10,
-        thinkingConfig: { thinkingBudget: 0 }
-      }
+      config: { maxOutputTokens: 10, thinkingConfig: { thinkingBudget: 0 } }
     });
-    if (response.text) {
-      return { status: 'ok', message: 'Koneksi Aktif & Billing Aman!', model: modelName };
-    }
-    return { status: 'error', message: 'API Terhubung tapi respon kosong.', model: modelName };
+    return response.text ? { status: 'ok', message: 'Koneksi Aktif!', model: modelName } : { status: 'error', message: 'API Respon Kosong', model: modelName };
   } catch (error: any) {
-    let msg = 'Gagal terhubung.';
-    if (error.message?.includes('402')) msg = 'Billing belum aktif / saldo habis.';
-    if (error.message?.includes('403')) msg = 'API Key tidak valid atau dilarang.';
-    if (error.message?.includes('429')) msg = 'Limit penggunaan terlampaui.';
-    return { status: 'error', message: msg, model: modelName };
+    return { status: 'error', message: 'API Offline/Limited', model: modelName };
   }
 };
 
@@ -39,25 +96,9 @@ export const generateMealPlan = async (prefs: UserPreferences, localOverrides?: 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const localPriceContext = localOverrides && Object.keys(localOverrides).length > 0 
-    ? `Daftar HARGA PASAR LOKAL terbaru di ${prefs.city} (HASIL KONTRIBUSI WARGA): 
-       ${Object.entries(localOverrides).map(([name, price]) => `- ${name}: Rp ${price}`).join('\n')}`
-    : "Belum ada kontribusi harga warga untuk kota ini.";
+    ? `Konteks Harga: ${Object.entries(localOverrides).map(([n, p]) => `${n}: ${p}`).join(', ')}` : "";
 
-  const prompt = `
-    Halo! Kamu adalah asisten cerdas "AI Sahabat Belanja".
-    TUGAS UTAMA: Susun rencana menu makan keluarga di ${prefs.city} dengan gaya hidup "${prefs.lifestyle}".
-    ATURAN GAYA HIDUP (${prefs.lifestyle}):
-    - Sederhana: Fokus pada protein nabati, sayuran musiman.
-    - Normal: Seimbang protein hewani dan nabati.
-    - Mewah: Protein premium, buah harian.
-    PARAMETER KELUARGA:
-    - Budget Total: Rp ${prefs.budget}
-    - Durasi: ${prefs.durationDays} Hari
-    - Target: ${prefs.numberOfPeople} Orang (${prefs.portionsPerMeal}x makan/hari)
-    KONTEKS HARGA LOKAL:
-    ${localPriceContext}
-    1. Hitung biaya sangat teliti. 2. Berikan analisis jujur. 3. Nutrisi seimbang.
-  `;
+  const prompt = `AI Sahabat Belanja. Menu ${prefs.durationDays} hari, kota ${prefs.city}, gaya ${prefs.lifestyle}, budget ${prefs.budget}, keluarga ${prefs.numberOfPeople} orang. ${localPriceContext}`;
 
   try {
     const response = await ai.models.generateContent({
@@ -69,128 +110,22 @@ export const generateMealPlan = async (prefs: UserPreferences, localOverrides?: 
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            dailyPlans: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  day: { type: Type.INTEGER },
-                  breakfast: {
-                    type: Type.OBJECT,
-                    properties: {
-                      title: { type: Type.STRING },
-                      ingredients: {
-                        type: Type.ARRAY,
-                        items: {
-                          type: Type.OBJECT,
-                          properties: {
-                            name: { type: Type.STRING },
-                            quantity: { type: Type.STRING },
-                            unitPrice: { type: Type.NUMBER },
-                            totalPrice: { type: Type.NUMBER }
-                          },
-                          required: ["name", "quantity", "unitPrice", "totalPrice"]
-                        }
-                      },
-                      nutrition: {
-                        type: Type.OBJECT,
-                        properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } },
-                        required: ["calories", "protein", "carbs"]
-                      }
-                    },
-                    required: ["title", "ingredients", "nutrition"]
-                  },
-                  lunch: {
-                    type: Type.OBJECT,
-                    properties: {
-                      title: { type: Type.STRING },
-                      ingredients: {
-                        type: Type.ARRAY,
-                        items: {
-                          type: Type.OBJECT,
-                          properties: {
-                            name: { type: Type.STRING },
-                            quantity: { type: Type.STRING },
-                            unitPrice: { type: Type.NUMBER },
-                            totalPrice: { type: Type.NUMBER }
-                          },
-                          required: ["name", "quantity", "unitPrice", "totalPrice"]
-                        }
-                      },
-                      nutrition: {
-                        type: Type.OBJECT,
-                        properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } },
-                        required: ["calories", "protein", "carbs"]
-                      }
-                    },
-                    required: ["title", "ingredients", "nutrition"]
-                  },
-                  dinner: {
-                    type: Type.OBJECT,
-                    properties: {
-                      title: { type: Type.STRING },
-                      ingredients: {
-                        type: Type.ARRAY,
-                        items: {
-                          type: Type.OBJECT,
-                          properties: {
-                            name: { type: Type.STRING },
-                            quantity: { type: Type.STRING },
-                            unitPrice: { type: Type.NUMBER },
-                            totalPrice: { type: Type.NUMBER }
-                          },
-                          required: ["name", "quantity", "unitPrice", "totalPrice"]
-                        }
-                      },
-                      nutrition: {
-                        type: Type.OBJECT,
-                        properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } },
-                        required: ["calories", "protein", "carbs"]
-                      }
-                    },
-                    required: ["title", "ingredients", "nutrition"]
-                  },
-                  dailyTotal: {
-                    type: Type.OBJECT,
-                    properties: {
-                      calories: { type: Type.NUMBER },
-                      protein: { type: Type.NUMBER },
-                      carbs: { type: Type.NUMBER }
-                    },
-                    required: ["calories", "protein", "carbs"]
-                  }
-                },
-                required: ["day", "breakfast", "lunch", "dinner", "dailyTotal"]
-              }
-            },
-            shoppingList: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  quantity: { type: Type.STRING },
-                  category: { type: Type.STRING },
-                  estimatedPrice: { type: Type.NUMBER }
-                },
-                required: ["name", "quantity", "category", "estimatedPrice"]
-              }
-            },
+            dailyPlans: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { day: { type: Type.INTEGER }, breakfast: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.STRING }, unitPrice: { type: Type.NUMBER }, totalPrice: { type: Type.NUMBER } } } }, nutrition: { type: Type.OBJECT, properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } } } } }, lunch: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.STRING }, unitPrice: { type: Type.NUMBER }, totalPrice: { type: Type.NUMBER } } } }, nutrition: { type: Type.OBJECT, properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } } } } }, dinner: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.STRING }, unitPrice: { type: Type.NUMBER }, totalPrice: { type: Type.NUMBER } } } }, nutrition: { type: Type.OBJECT, properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } } } } }, dailyTotal: { type: Type.OBJECT, properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } } } } } },
+            shoppingList: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.STRING }, category: { type: Type.STRING }, estimatedPrice: { type: Type.NUMBER } } } },
             totalEstimatedCost: { type: Type.NUMBER },
             budgetAnalysis: { type: Type.STRING },
             tips: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["dailyPlans", "shoppingList", "totalEstimatedCost", "budgetAnalysis", "tips"]
+          }
         }
       }
     });
 
     const text = response.text;
-    if (!text) throw new Error("AI tidak memberikan respon teks.");
-    return JSON.parse(text) as GenerationResult;
+    if (!text) throw new Error("API Empty");
+    return { ...JSON.parse(text), isFallback: false };
     
   } catch (error) {
-    console.error("AI Sahabat Belanja Error:", error);
-    throw new Error("Duh Bund, asisten AI lagi istirahat sebentar. Pastikan koneksi lancar lalu coba klik 'Susun Menu' lagi ya!");
+    console.warn("Gemini Error, switching to Local Fallback Engine...");
+    return generateLocalFallback(prefs);
   }
 };

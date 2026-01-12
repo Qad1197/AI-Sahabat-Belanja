@@ -51,6 +51,7 @@ export interface GenerationResult {
   budgetAnalysis: string;
   tips: string[];
   sourceLinks?: SourceLink[];
+  isFallback?: boolean;
 }
 
 export interface UserPreferences {

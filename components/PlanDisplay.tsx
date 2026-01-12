@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { GenerationResult, DayPlan, IngredientDetail, ShoppingItem } from '../types';
+import { GenerationResult, DayPlan, IngredientDetail, ShoppingItem, Meal, NutritionalInfo } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatRupiah, formatNumber } from '../App';
 
@@ -22,18 +22,28 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Protein': '#ef4444', 'Sayur': '#22c55e', 'Karbohidrat': '#eab308', 'Buah': '#f97316', 'Bumbu': '#8b5cf6', 'Lainnya': '#64748b'
 };
 
+const EMPTY_MEAL: Meal = {
+  title: "Menu tidak tersedia",
+  ingredients: [],
+  nutrition: { calories: 0, protein: 0, carbs: 0 }
+};
+
 export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, priceOverrides, onUpdateOverride }) => {
   const [activeTab, setActiveTab] = useState<'meals' | 'shopping' | 'analysis'>('meals');
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const [editingIngredient, setEditingIngredient] = useState<{name: string, value: string} | null>(null);
 
-  const currentDayPlan = result.dailyPlans.find(d => d.day === selectedDay) || result.dailyPlans[0];
+  const currentDayPlan = useMemo(() => {
+    if (!result.dailyPlans || result.dailyPlans.length === 0) return null;
+    return result.dailyPlans.find(d => d.day === selectedDay) || result.dailyPlans[0];
+  }, [result.dailyPlans, selectedDay]);
 
   const getEffectivePrice = (ingredient: IngredientDetail) => {
     return priceOverrides[city]?.[ingredient.name] ?? ingredient.unitPrice;
   };
 
   const calculateMealTotal = (ingredients: IngredientDetail[]) => {
+    if (!ingredients) return 0;
     return ingredients.reduce((sum, ing) => {
       const effPrice = getEffectivePrice(ing);
       const ratio = ing.unitPrice > 0 ? effPrice / ing.unitPrice : 1;
@@ -42,6 +52,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
   };
 
   const totalEffectiveCost = useMemo(() => {
+    if (!result.shoppingList) return 0;
     return result.shoppingList.reduce((sum, item) => {
       const effPrice = priceOverrides[city]?.[item.name] ?? item.estimatedPrice;
       const ratio = item.estimatedPrice > 0 ? effPrice / item.estimatedPrice : 1;
@@ -50,6 +61,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
   }, [result.shoppingList, priceOverrides, city]);
 
   const categoryAnalysis = useMemo(() => {
+    if (!result.shoppingList) return [];
     const categories: Record<string, number> = {};
     result.shoppingList.forEach(item => {
       const effPrice = priceOverrides[city]?.[item.name] ?? item.estimatedPrice;
@@ -63,7 +75,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
   }, [result.shoppingList, budget, totalEffectiveCost, priceOverrides, city]);
 
   const renderMealTable = (title: string, ingredients: IngredientDetail[], slotColor: string) => {
-    const totalCost = calculateMealTotal(ingredients);
+    const totalCost = calculateMealTotal(ingredients || []);
     return (
       <div className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm mb-6">
         <div className={`${slotColor} px-6 py-4 flex justify-between items-center text-white`}>
@@ -81,7 +93,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {ingredients.map((ing, idx) => {
+              {ingredients && ingredients.map((ing, idx) => {
                 const effPrice = getEffectivePrice(ing);
                 const isOverridden = priceOverrides[city]?.[ing.name] !== undefined;
                 const isEditing = editingIngredient?.name === ing.name;
@@ -113,36 +125,21 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
                             />
                           </div>
                           <div className="flex gap-1.5">
-                             <button 
-                                onClick={() => setEditingIngredient(null)} 
-                                className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-gray-200"
-                             >Batal</button>
-                             <button 
-                                onClick={() => {
-                                  const price = parseInt(editingIngredient.value.replace(/[^0-9]/g, '')) || 0;
-                                  onUpdateOverride(city, ing.name, price);
-                                  setEditingIngredient(null);
-                                }} 
-                                className="px-3 py-1.5 bg-[#5a823e] text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-md active:scale-95"
-                             >Simpan</button>
+                             <button onClick={() => setEditingIngredient(null)} className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-gray-200">Batal</button>
+                             <button onClick={() => { const price = parseInt(editingIngredient.value.replace(/[^0-9]/g, '')) || 0; onUpdateOverride(city, ing.name, price); setEditingIngredient(null); }} className="px-3 py-1.5 bg-[#5a823e] text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-md active:scale-95">Simpan</button>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-end group">
                           <span className={`font-mono font-black ${isOverridden ? 'text-orange-500' : 'text-gray-900'}`}>{formatRupiah(effPrice)}</span>
-                          <button 
-                            onClick={() => setEditingIngredient({ name: ing.name, value: formatNumber(effPrice) })}
-                            className="text-[9px] font-black text-[#5a823e] uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-                          >
+                          <button onClick={() => setEditingIngredient({ name: ing.name, value: formatNumber(effPrice) })} className="text-[9px] font-black text-[#5a823e] uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                             <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             Edit
                           </button>
                         </div>
                       )}
                     </td>
-                    <td className="py-4 text-right pr-2 font-mono font-black text-gray-900">
-                      {formatRupiah(ing.totalPrice * (ing.unitPrice > 0 ? effPrice/ing.unitPrice : 1))}
-                    </td>
+                    <td className="py-4 text-right pr-2 font-mono font-black text-gray-900">{formatRupiah(ing.totalPrice * (ing.unitPrice > 0 ? effPrice/ing.unitPrice : 1))}</td>
                   </tr>
                 );
               })}
@@ -153,30 +150,48 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
     );
   };
 
+  if (!currentDayPlan) return null;
+
+  const breakfast = currentDayPlan.breakfast || EMPTY_MEAL;
+  const lunch = currentDayPlan.lunch || EMPTY_MEAL;
+  const dinner = currentDayPlan.dinner || EMPTY_MEAL;
+  const dailyTotal = currentDayPlan.dailyTotal || { calories: 0, protein: 0, carbs: 0 };
+
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-3xl flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-500 text-white p-2.5 rounded-xl shadow-lg shadow-blue-100">
-             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+      {result.isFallback ? (
+        <div className="bg-orange-50 border border-orange-100 p-5 rounded-3xl flex items-center justify-between animate-in zoom-in-95">
+          <div className="flex items-center gap-3">
+            <div className="bg-orange-500 text-white p-2.5 rounded-xl shadow-lg shadow-orange-100">
+               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-orange-900 uppercase tracking-widest leading-none mb-1">AI Sedang Istirahat</h4>
+              <p className="text-sm font-black text-orange-600">Mengaktifkan Mesin Lokal Sahabat</p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-[10px] font-black text-blue-900 uppercase tracking-widest leading-none mb-1">Status Keakuratan</h4>
-            <p className="text-sm font-black text-blue-600">Terverifikasi PIHPS & Warga</p>
-          </div>
+          <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-3 py-1 rounded-full uppercase">Fallback Mode</span>
         </div>
-        {result.sourceLinks && result.sourceLinks[0] && (
-          <a href={result.sourceLinks[0].uri} target="_blank" className="text-[10px] font-black text-blue-600 border-2 border-blue-200 px-4 py-2 rounded-xl hover:bg-white transition uppercase">Cek Portal BI</a>
-        )}
-      </div>
+      ) : (
+        <div className="bg-blue-50 border border-blue-100 p-4 rounded-3xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-500 text-white p-2.5 rounded-xl shadow-lg shadow-blue-100">
+               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-blue-900 uppercase tracking-widest leading-none mb-1">Status Keakuratan</h4>
+              <p className="text-sm font-black text-blue-600">Terverifikasi PIHPS & Warga</p>
+            </div>
+          </div>
+          {result.sourceLinks && result.sourceLinks[0] && (
+            <a href={result.sourceLinks[0].uri} target="_blank" className="text-[10px] font-black text-blue-600 border-2 border-blue-200 px-4 py-2 rounded-xl hover:bg-white transition uppercase">Cek Portal BI</a>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-2 p-1.5 bg-gray-100 rounded-[2rem] w-fit">
         {['meals', 'shopping', 'analysis'].map((tab) => (
-          <button 
-            key={tab} 
-            onClick={() => setActiveTab(tab as any)} 
-            className={`px-6 py-2.5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-[#5a823e] shadow-sm' : 'text-gray-400'}`}
-          >
+          <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-6 py-2.5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-[#5a823e] shadow-sm' : 'text-gray-400'}`}>
             {tab === 'meals' ? 'Menu' : tab === 'shopping' ? 'Belanja' : 'Analisis'}
           </button>
         ))}
@@ -186,11 +201,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             {result.dailyPlans.map(d => (
-              <button 
-                key={d.day} 
-                onClick={() => setSelectedDay(d.day)} 
-                className={`min-w-[70px] py-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${selectedDay === d.day ? 'bg-[#5a823e] border-[#5a823e] text-white shadow-lg' : 'bg-white border-gray-100 text-gray-300'}`}
-              >
+              <button key={d.day} onClick={() => setSelectedDay(d.day)} className={`min-w-[70px] py-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${selectedDay === d.day ? 'bg-[#5a823e] border-[#5a823e] text-white shadow-lg' : 'bg-white border-gray-100 text-gray-300'}`}>
                 <span className="text-[8px] font-black uppercase">Hari</span>
                 <span className="text-xl font-black">{d.day}</span>
               </button>
@@ -199,17 +210,17 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 space-y-6">
-              {renderMealTable(`MENU PAGI • ${currentDayPlan.breakfast.title}`, currentDayPlan.breakfast.ingredients, 'bg-orange-400')}
-              {renderMealTable(`MENU SIANG • ${currentDayPlan.lunch.title}`, currentDayPlan.lunch.ingredients, 'bg-[#5a823e]')}
-              {renderMealTable(`MENU MALAM • ${currentDayPlan.dinner.title}`, currentDayPlan.dinner.ingredients, 'bg-indigo-500')}
+              {renderMealTable(`MENU PAGI • ${breakfast.title}`, breakfast.ingredients, 'bg-orange-400')}
+              {renderMealTable(`MENU SIANG • ${lunch.title}`, lunch.ingredients, 'bg-[#5a823e]')}
+              {renderMealTable(`MENU MALAM • ${dinner.title}`, dinner.ingredients, 'bg-indigo-500')}
             </div>
             <div className="lg:col-span-4 space-y-6">
                <div className="bg-gray-900 text-white p-8 rounded-[2.5rem] shadow-xl sticky top-24">
                   <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-8">Nutrisi Harian</h4>
                   {[
-                    { label: 'Energi', val: currentDayPlan.dailyTotal.calories, std: STANDARDS.calories, unit: ' kkal', color: 'bg-orange-500' },
-                    { label: 'Protein', val: currentDayPlan.dailyTotal.protein, std: STANDARDS.protein, unit: 'g', color: 'bg-green-500' },
-                    { label: 'Karbo', val: currentDayPlan.dailyTotal.carbs, std: STANDARDS.carbs, unit: 'g', color: 'bg-blue-500' }
+                    { label: 'Energi', val: dailyTotal.calories, std: STANDARDS.calories, unit: ' kkal', color: 'bg-orange-500' },
+                    { label: 'Protein', val: dailyTotal.protein, std: STANDARDS.protein, unit: 'g', color: 'bg-green-500' },
+                    { label: 'Karbo', val: dailyTotal.carbs, std: STANDARDS.carbs, unit: 'g', color: 'bg-blue-500' }
                   ].map((nut, i) => (
                     <div key={i} className="mb-6 last:mb-0">
                       <div className="flex justify-between items-end mb-2">
@@ -241,7 +252,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
              <table className="w-full">
                <thead><tr className="text-left text-[10px] font-black text-gray-400 uppercase border-b border-gray-50"><th className="pb-4">Kategori</th><th className="pb-4">Item</th><th className="pb-4">Volume</th><th className="pb-4 text-right">Harga</th></tr></thead>
                <tbody className="divide-y divide-gray-50">
-                 {result.shoppingList.map((item, idx) => {
+                 {result.shoppingList && result.shoppingList.map((item, idx) => {
                    const effPrice = priceOverrides[city]?.[item.name] ?? item.estimatedPrice;
                    return (
                      <tr key={idx} className="hover:bg-gray-50/50 transition">
@@ -262,7 +273,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-7 rounded-[2rem] border border-gray-100 flex flex-col"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Budgetmu</span><span className="text-2xl font-black text-gray-800">{formatRupiah(budget)}</span></div>
-            <div className="bg-white p-7 rounded-[2rem] border border-gray-100 flex flex-col"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Estimasi AI</span><span className={`text-2xl font-black ${totalEffectiveCost > budget ? 'text-red-500' : 'text-[#5a823e]'}`}>{formatRupiah(totalEffectiveCost)}</span></div>
+            <div className="bg-white p-7 rounded-[2rem] border border-gray-100 flex flex-col"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Estimasi Sahabat</span><span className={`text-2xl font-black ${totalEffectiveCost > budget ? 'text-red-500' : 'text-[#5a823e]'}`}>{formatRupiah(totalEffectiveCost)}</span></div>
             <div className={`p-7 rounded-[2rem] shadow-xl flex flex-col ${totalEffectiveCost > budget ? 'bg-red-500 text-white' : 'bg-[#5a823e] text-white'}`}><span className="text-[10px] font-black opacity-80 uppercase tracking-widest mb-2">Sisa / Selisih</span><span className="text-2xl font-black">{formatRupiah(budget - totalEffectiveCost)}</span></div>
           </div>
           <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100">
@@ -282,8 +293,8 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ result, budget, city, 
                   </BarChart>
                 </ResponsiveContainer>
              </div>
-             <div className="mt-8 p-6 bg-[#f2f7ed] rounded-3xl border border-[#5a823e]/10">
-                <p className="text-xs font-bold text-gray-600 leading-relaxed italic">"💡 {result.budgetAnalysis}"</p>
+             <div className={`mt-8 p-6 rounded-3xl border ${result.isFallback ? 'bg-orange-50 border-orange-200' : 'bg-[#f2f7ed] border-[#5a823e]/10'}`}>
+                <p className={`text-xs font-bold leading-relaxed italic ${result.isFallback ? 'text-orange-800' : 'text-gray-600'}`}>"💡 {result.budgetAnalysis}"</p>
              </div>
           </div>
         </div>
