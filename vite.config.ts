@@ -11,21 +11,6 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    target: 'esnext',
-    // Meningkatkan limit warning menjadi 1MB (1000kb)
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        // Memecah library besar menjadi file terpisah (Vendor Splitting)
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('recharts')) return 'vendor-charts';
-            if (id.includes('jspdf')) return 'vendor-pdf';
-            if (id.includes('@google/genai')) return 'vendor-ai';
-            return 'vendor';
-          }
-        }
-      }
-    }
+    target: 'esnext'
   }
 });
