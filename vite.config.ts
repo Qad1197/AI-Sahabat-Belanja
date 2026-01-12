@@ -11,18 +11,17 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    target: 'esnext',
-    // Perbaikan untuk pesan "- Adjust chunk size limit..."
-    chunkSizeWarningLimit: 1600, 
+    // Target es2022 mendukung native DOMException secara default di level runtime modern
+    target: 'es2022',
+    chunkSizeWarningLimit: 2000, 
     rollupOptions: {
       output: {
-        // Strategi manualChunks untuk memisahkan library besar (Code Splitting)
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('jspdf')) return 'vendor-pdf';
             if (id.includes('recharts')) return 'vendor-charts';
             if (id.includes('@google/genai')) return 'vendor-ai';
-            return 'vendor-base'; // React & yang lainnya
+            return 'vendor-base';
           }
         }
       }

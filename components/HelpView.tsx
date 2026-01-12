@@ -53,7 +53,7 @@ export const HelpView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [donorName, setDonorName] = useState("");
   const [donorMsg, setDonorMsg] = useState("");
   
-  const DANA_LINK = "https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026011256163494";
+  const DANA_LINK = "https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012012020022922994941";
 
   const faqs = [
     {

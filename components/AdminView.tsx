@@ -14,20 +14,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ priceOverrides, onBack }) 
   const [diagResult, setDiagResult] = useState<{status: string, message: string, model: string} | null>(null);
   const [storageSize, setStorageSize] = useState<string>("0 KB");
   
-  // Stats
   const totalRegions = INDONESIAN_REGIONS.length;
   const regionsWithOverrides = Object.keys(priceOverrides).length;
-  // Fix: Explicitly type the reduce return to number and use Object.keys for better type inference compatibility
   const totalPriceContributions = Object.keys(priceOverrides).reduce<number>((acc, key) => acc + Object.keys(priceOverrides[key]).length, 0);
 
   const calculateStorage = () => {
     let total = 0;
-    for (const x in localStorage) {
-      if (localStorage.hasOwnProperty(x)) {
-        // Fix: Use getItem to ensure we handle potentially null/unknown values correctly for size calculation
-        const item = localStorage.getItem(x);
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        const item = localStorage.getItem(key);
         if (item) {
-          total += ((item.length + x.length) * 2);
+          total += ((item.length + key.length) * 2);
         }
       }
     }
@@ -45,13 +43,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ priceOverrides, onBack }) 
     const data = {
       user: JSON.parse(localStorage.getItem('asb_user_profile') || '{}'),
       overrides: JSON.parse(localStorage.getItem('asb_price_overrides') || '{}'),
-      exportedAt: new Date().toISOString()
+      exportedAt: new Date().toISOString(),
+      appVersion: "1.13.0-STABLE"
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ASB_Database_Backup_${new Date().getTime()}.json`;
+    a.download = `ASB_Database_V13_${new Date().getTime()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -93,66 +92,33 @@ export const AdminView: React.FC<AdminViewProps> = ({ priceOverrides, onBack }) 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         {/* Database Diagnostics */}
          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
             <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-6">Database Management</h3>
             <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100 mb-6">
                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 1.105 2.239 2 5 2s5-.895 5-2V7M4 7c0 1.105 2.239 2 5 2s5-.895 5-2M4 7c0-1.105 2.239-2 5-2s5 .895 5 2m0 5c0 1.105-2.239 2-5 2s-5-.895-5-2" /></svg>
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-blue-900 uppercase">Storage Engine</p>
-                    <p className="text-[10px] font-bold text-blue-600">Client-Side LocalStorage</p>
-                  </div>
+                  <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 1.105 2.239 2 5 2s5-.895 5-2V7M4 7c0 1.105 2.239 2 5 2s5-.895 5-2" /></svg></div>
+                  <div><p className="text-xs font-black text-blue-900 uppercase">Storage Engine</p><p className="text-[10px] font-bold text-blue-600">Client-Side LocalStorage</p></div>
                </div>
-               <p className="text-[10px] text-blue-800/70 leading-relaxed font-medium">
-                  Saat ini data profil Bunda dan database harga disimpan langsung di memori browser perangkat ini (aman & privat).
-               </p>
+               <p className="text-[10px] text-blue-800/70 leading-relaxed font-medium">Data profil Bunda dan database harga disimpan langsung di memori browser perangkat ini (aman & privat).</p>
             </div>
-            
-            <button 
-              onClick={exportDatabase}
-              className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
-            >
+            <button onClick={exportDatabase} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0l-4-4m4 4v12" /></svg>
               Export Full Database (JSON)
             </button>
          </div>
-
          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
             <div className="flex justify-between items-center mb-6">
                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">Health Check AI</h3>
-               <button onClick={runDiagnostic} disabled={diagLoading} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <svg className={`w-4 h-4 text-gray-400 ${diagLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-               </button>
+               <button onClick={runDiagnostic} disabled={diagLoading} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"><svg className={`w-4 h-4 text-gray-400 ${diagLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9" /></svg></button>
             </div>
-
             {diagResult ? (
                <div className={`p-6 rounded-3xl border-2 animate-in zoom-in-95 ${diagResult.status === 'ok' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
                   <div className="flex items-center gap-4 mb-4">
                      <span className="text-2xl">{diagResult.status === 'ok' ? '🛡️' : '🚨'}</span>
-                     <div>
-                        <p className={`text-sm font-black ${diagResult.status === 'ok' ? 'text-green-700' : 'text-red-700'}`}>{diagResult.message}</p>
-                        <p className="text-[10px] font-bold text-gray-400">Response latency: 240ms</p>
-                     </div>
-                  </div>
-                  <div className="space-y-2 border-t border-black/5 pt-4">
-                     <div className="flex justify-between text-[10px] font-bold text-gray-500">
-                        <span>API Key Status</span>
-                        <span className="text-green-600">CONNECTED</span>
-                     </div>
-                     <div className="flex justify-between text-[10px] font-bold text-gray-500">
-                        <span>Billing Account</span>
-                        <span className="text-green-600">ENABLED</span>
-                     </div>
+                     <div><p className={`text-sm font-black ${diagResult.status === 'ok' ? 'text-green-700' : 'text-red-700'}`}>{diagResult.message}</p><p className="text-[10px] font-bold text-gray-400">Response latency: 240ms</p></div>
                   </div>
                </div>
-            ) : (
-               <div className="py-12 flex flex-col items-center justify-center bg-gray-50/50 border border-dashed border-gray-100 rounded-3xl text-gray-300 font-black text-[10px] uppercase tracking-widest">
-                  Running check...
-               </div>
-            )}
+            ) : <div className="py-12 flex flex-col items-center justify-center bg-gray-50/50 border border-dashed border-gray-100 rounded-3xl text-gray-300 font-black text-[10px] uppercase tracking-widest">Running check...</div>}
          </div>
       </div>
 
@@ -160,31 +126,23 @@ export const AdminView: React.FC<AdminViewProps> = ({ priceOverrides, onBack }) 
          <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-8">Admin Advanced Actions</h3>
          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <button onClick={exportDatabase} className="p-5 bg-white/5 border border-white/10 rounded-2xl text-center hover:bg-white/10 transition group">
-               <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
-                  <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0l-4-4m4 4V4" /></svg>
-               </div>
+               <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition"><svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1" /></svg></div>
                <span className="text-[10px] font-black uppercase tracking-widest">Data Backup</span>
             </button>
             <button className="p-5 bg-white/5 border border-white/10 rounded-2xl text-center hover:bg-white/10 transition group">
-               <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
-                  <svg className="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-               </div>
+               <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition"><svg className="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
                <span className="text-[10px] font-black uppercase tracking-widest">Clear Cache</span>
             </button>
             <button className="p-5 bg-white/5 border border-white/10 rounded-2xl text-center hover:bg-white/10 transition group">
-               <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
-                  <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-               </div>
+               <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition"><svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405" /></svg></div>
                <span className="text-[10px] font-black uppercase tracking-widest">Broadcast</span>
             </button>
             <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-center hover:bg-red-500/20 transition group">
-               <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
-                  <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-               </div>
-               <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Wipe All Data</span>
+               <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition"><svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21" /></svg></div>
+               <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Wipe Data</span>
             </button>
          </div>
-         <p className="text-[8px] font-black text-gray-700 text-center mt-8 uppercase tracking-[0.4em]">WPR Admin Studio v2.4.0-PROD</p>
+         <p className="text-[8px] font-black text-gray-700 text-center mt-8 uppercase tracking-[0.4em]">WPR Admin Studio v1.13.0-STABLE</p>
       </div>
     </div>
   );

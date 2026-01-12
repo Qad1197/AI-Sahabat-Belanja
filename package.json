@@ -2,7 +2,7 @@
 {
   "name": "ai-sahabat-belanja",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.13.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,11 +17,14 @@
     "recharts": "^2.15.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  },
+  "overrides": {
+    "node-domexception": "$node-domexception"
   }
 }
