@@ -4,6 +4,7 @@ import { UserProfile } from '../types';
 import { formatRupiah, formatNumber } from '../App';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { jsPDF } from 'jspdf';
+import { checkApiStatus } from '../services/gemini';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -64,15 +65,166 @@ const RECIPE_POOL = [
       "Tambahkan santan, aduk terus agar tidak pecah.",
       "Masukkan sisa sayuran, beri gula dan garam, masak hingga matang sempurna."
     ]
+  },
+  {
+    title: "Soto Ayam Lamongan",
+    totalCost: 45000,
+    description: "Soto ayam khas dengan taburan koya yang gurih dan kuah kuning yang segar.",
+    ingredients: [
+      { name: "Dada Ayam", qty: "500 gr", price: 28000 },
+      { name: "Telur Ayam", qty: "2 butir", price: 4000 },
+      { name: "Soun & Toge", qty: "1 paket", price: 5000 },
+      { name: "Bumbu Soto", qty: "1 paket", price: 5000 },
+      { name: "Krupuk Udang (Koya)", qty: "1 bungkus", price: 3000 }
+    ],
+    steps: [
+      "Rebus ayam hingga empuk, lalu goreng sebentar dan suwir-suwir.",
+      "Tumis bumbu soto halus hingga harum, masukkan ke air kaldu rebusan ayam.",
+      "Siapkan mangkuk, tata soun, toge, dan suwiran ayam.",
+      "Siram dengan kuah soto panas.",
+      "Taburkan bubuk koya (kerupuk udang haluskan) di atasnya."
+    ]
+  },
+  {
+    title: "Rendang Daging Sapi",
+    totalCost: 95000,
+    description: "Masakan paling ikonik dunia. Kaya rempah dan bisa tahan lama untuk stok makan keluarga.",
+    ingredients: [
+      { name: "Daging Sapi", qty: "500 gr", price: 70000 },
+      { name: "Santan Kental", qty: "500 ml", price: 12000 },
+      { name: "Bumbu Rendang Komplit", qty: "1 paket", price: 10000 },
+      { name: "Kelapa Sangrai", qty: "1 bungkus", price: 3000 }
+    ],
+    steps: [
+      "Potong daging sapi sesuai selera, jangan terlalu kecil.",
+      "Tumis bumbu rendang hingga harum dan berminyak.",
+      "Masukkan daging, aduk hingga berubah warna.",
+      "Tuangkan santan, masak dengan api kecil sambil terus diaduk perlahan.",
+      "Masak hingga kuah mengering dan bumbu meresap hitam sempurna (4-5 jam)."
+    ]
+  },
+  {
+    title: "Gado-Gado Siram",
+    totalCost: 32000,
+    description: "Salad khas Indonesia dengan bumbu kacang yang kental dan isian sayur yang menyehatkan.",
+    ingredients: [
+      { name: "Kacang Tanah Sangrai", qty: "200 gr", price: 8000 },
+      { name: "Sayuran (Bayam, Kol, Toge)", qty: "1 paket", price: 10000 },
+      { name: "Tahu & Tempe", qty: "1 kotak", price: 6000 },
+      { name: "Lontong/Ketupat", qty: "2 buah", price: 5000 },
+      { name: "Gula Merah & Asam", qty: "1 paket", price: 3000 }
+    ],
+    steps: [
+      "Rebus semua sayuran hingga matang, tiriskan.",
+      "Goreng tahu dan tempe, potong-potong.",
+      "Haluskan kacang tanah, campur dengan gula merah, asam jawa, dan air hangat.",
+      "Tata lontong, sayuran, tahu, dan tempe di piring.",
+      "Siram dengan bumbu kacang dan beri kerupuk di atasnya."
+    ]
+  },
+  {
+    title: "Ikan Bakar Cianjur",
+    totalCost: 55000,
+    description: "Ikan mas atau nila bakar dengan bumbu kecap pedas manis yang meresap.",
+    ingredients: [
+      { name: "Ikan Nila/Mas", qty: "2 ekor besar", price: 40000 },
+      { name: "Kecap Manis", qty: "1 botol kecil", price: 6000 },
+      { name: "Bumbu Bakar (Bawang, Cabai)", qty: "1 paket", price: 7000 },
+      { name: "Lalapan Segar", qty: "1 ikat", price: 2000 }
+    ],
+    steps: [
+      "Bersihkan ikan, lumuri dengan air jeruk nipis untuk menghilangkan amis.",
+      "Tumis bumbu halus, campurkan dengan kecap manis.",
+      "Oleskan bumbu ke seluruh bagian ikan.",
+      "Bakar ikan di atas arang atau teflon hingga matang sambil terus dioles bumbu.",
+      "Sajikan hangat dengan sambal terasi dan lalapan."
+    ]
+  },
+  {
+    title: "Orak Arik Telur Tempe",
+    totalCost: 18000,
+    description: "Menu super hemat tanggal tua tapi tetap kaya protein dan sangat disukai anak-anak.",
+    ingredients: [
+      { name: "Telur Ayam", qty: "3 butir", price: 6000 },
+      { name: "Tempe", qty: "1 papan", price: 5000 },
+      { name: "Bawang & Cabai", qty: "1 paket", price: 4000 },
+      { name: "Kecap & Garam", qty: "1 paket", price: 3000 }
+    ],
+    steps: [
+      "Potong tempe kecil-kecil, goreng hingga setengah matang.",
+      "Tumis bawang merah, bawang putih, dan cabai hingga harum.",
+      "Masukkan telur, buat orak-arik.",
+      "Masukkan tempe goreng, tambahkan kecap manis dan sedikit garam.",
+      "Aduk rata hingga bumbu meresap, sajikan segera."
+    ]
+  },
+  {
+    title: "Capcay Goreng Bakso",
+    totalCost: 35000,
+    description: "Menu sayuran lengkap dengan tambahan bakso sapi yang gurih.",
+    ingredients: [
+      { name: "Sayur Capcay Komplit", qty: "1 paket", price: 15000 },
+      { name: "Bakso Sapi", qty: "10 butir", price: 12000 },
+      { name: "Saus Tiram & Maizena", qty: "1 paket", price: 5000 },
+      { name: "Bumbu Putih", qty: "1 paket", price: 3000 }
+    ],
+    steps: [
+      "Potong-potong sayuran dan belah bakso sapi.",
+      "Tumis bawang putih hingga harum, masukkan bakso.",
+      "Masukkan sayuran yang keras (wortel) terlebih dahulu, beri sedikit air.",
+      "Masukkan sisa sayuran, saus tiram, gula, dan garam.",
+      "Tambahkan larutan maizena agar kuah sedikit mengental, angkat."
+    ]
+  },
+  {
+    title: "Pepes Tahu Jamur",
+    totalCost: 24000,
+    description: "Masakan kukus yang sehat, bebas minyak, dan aromanya sangat menggugah selera.",
+    ingredients: [
+      { name: "Tahu Putih", qty: "5 kotak", price: 8000 },
+      { name: "Jamur Tiram", qty: "200 gr", price: 7000 },
+      { name: "Daun Pisang", qty: "2 lembar", price: 3000 },
+      { name: "Bumbu Pepes & Kemangi", qty: "1 paket", price: 6000 }
+    ],
+    steps: [
+      "Haluskan tahu putih, campur dengan jamur tiram yang sudah disuwir.",
+      "Aduk rata dengan bumbu pepes halus dan daun kemangi.",
+      "Bungkus adonan dengan daun pisang, sematkan lidi.",
+      "Kukus selama 30 menit hingga matang.",
+      "Bakar sebentar di atas teflon agar aroma daun pisang lebih keluar."
+    ]
+  },
+  {
+    title: "Sop Iga Sapi",
+    totalCost: 88000,
+    description: "Menu istimewa akhir pekan. Kuah bening yang kaldu sapinya sangat terasa.",
+    ingredients: [
+      { name: "Iga Sapi", qty: "500 gr", price: 75000 },
+      { name: "Wortel & Kentang", qty: "2 buah", price: 5000 },
+      { name: "Bumbu Sop (Pala, Kayumanis)", qty: "1 paket", price: 5000 },
+      { name: "Daun Bawang & Seledri", qty: "1 ikat", price: 3000 }
+    ],
+    steps: [
+      "Rebus iga sapi hingga kotorannya keluar, buang air rebusan pertama.",
+      "Rebus kembali dengan air baru hingga daging iga empuk (gunakan presto jika ada).",
+      "Masukkan wortel dan kentang.",
+      "Tumis bumbu sop halus, masukkan ke dalam rebusan iga.",
+      "Taburkan daun bawang, seledri, dan bawang goreng sebelum disajikan."
+    ]
   }
 ];
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'favorites'>('dashboard');
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagResult, setDiagResult] = useState<{status: string, message: string, model: string} | null>(null);
 
+  // Algoritma untuk memastikan resep berubah tepat setiap hari 00:00 waktu lokal
   const todayRecipe = useMemo(() => {
-    const day = new Date().getDate();
-    const index = day % RECIPE_POOL.length;
+    const now = new Date();
+    // Gunakan format YYYYMMDD sebagai seed agar konsisten seharian penuh
+    const dateSeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+    const index = dateSeed % RECIPE_POOL.length;
     return RECIPE_POOL[index];
   }, []);
 
@@ -81,21 +233,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
   const totalSavings = totalBudget - totalActual;
   const savingsPercent = Math.round((totalSavings / totalBudget) * 100);
 
+  const handleDiagnostic = async () => {
+    setDiagLoading(true);
+    const res = await checkApiStatus();
+    setDiagResult(res);
+    setDiagLoading(false);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     const timestamp = new Date().toLocaleString('id-ID');
-    
-    // Header
     doc.setFontSize(22);
-    doc.setTextColor(64, 145, 108); // #40916C
+    doc.setTextColor(64, 145, 108);
     doc.text('AI Sahabat Belanja', 20, 25);
-    
     doc.setFontSize(10);
     doc.setTextColor(150, 150, 150);
     doc.text(`Laporan Rincian Mingguan - Dicetak pada: ${timestamp}`, 20, 32);
     doc.text(`Pengguna: ${user.name}`, 20, 37);
-    
-    // Table Header
     doc.setFillColor(242, 247, 237);
     doc.rect(20, 45, 170, 10, 'F');
     doc.setFontSize(10);
@@ -106,45 +260,69 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
     doc.text('Aktual', 100, 51);
     doc.text('Selisih', 140, 51);
     doc.text('Status', 170, 51);
-    
-    // Table Content
     let y = 62;
     doc.setFont('helvetica', 'normal');
     MOCK_HISTORY.forEach((item) => {
       const diff = item.budget - item.actual;
-      const status = diff >= 0 ? 'HEM AT' : 'BOROS';
-      
+      const status = diff >= 0 ? 'HEMAT' : 'BOROS';
       doc.text(item.date, 25, y);
       doc.text(formatNumber(item.budget), 60, y);
       doc.text(formatNumber(item.actual), 100, y);
       doc.text(formatNumber(diff), 140, y);
-      
       if (status === 'BOROS') doc.setTextColor(239, 68, 68);
       else doc.setTextColor(64, 145, 108);
       doc.text(status, 170, y);
       doc.setTextColor(0, 0, 0);
-      
       doc.setDrawColor(240, 240, 240);
       doc.line(20, y + 2, 190, y + 2);
       y += 10;
     });
-    
-    // Footer Summary
     y += 5;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text(`Total Penghematan: ${formatRupiah(totalSavings)} (${savingsPercent}%)`, 20, y);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(180, 180, 180);
-    doc.text('Dokumen ini dibuat secara otomatis oleh AI Sahabat Belanja.', 20, 280);
-    
     doc.save(`Riwayat_Belanja_${user.name.replace(/\s/g, '_')}.pdf`);
   };
 
   const renderDashboard = () => (
     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-      {/* Financial Health Card */}
+      {/* AI Diagnostic Card */}
+      <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm">
+        <div className="flex justify-between items-center mb-5">
+           <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status Sistem AI</h4>
+           <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#40916C] animate-pulse"></div>
+              <span className="text-[9px] font-black text-gray-500">Gemini 3 Flash</span>
+           </div>
+        </div>
+        
+        {diagResult ? (
+          <div className={`p-4 rounded-2xl border mb-4 flex items-center justify-between animate-in zoom-in-95 ${diagResult.status === 'ok' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{diagResult.status === 'ok' ? '✅' : '❌'}</span>
+              <div>
+                <p className={`text-xs font-black ${diagResult.status === 'ok' ? 'text-green-700' : 'text-red-700'}`}>{diagResult.message}</p>
+                <p className="text-[9px] font-bold text-gray-400">Model: {diagResult.model}</p>
+              </div>
+            </div>
+            <button onClick={() => setDiagResult(null)} className="text-[9px] font-black text-gray-400 hover:text-gray-600">RESET</button>
+          </div>
+        ) : (
+          <button 
+            onClick={handleDiagnostic}
+            disabled={diagLoading}
+            className="w-full py-4 bg-[#f8faf7] border-2 border-dashed border-gray-200 rounded-[1.5rem] flex items-center justify-center gap-3 group hover:border-[#40916C]/30 transition-all"
+          >
+            {diagLoading ? (
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-[#40916C] rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4 text-gray-400 group-hover:text-[#40916C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            )}
+            <span className="text-[10px] font-black text-gray-400 group-hover:text-[#40916C] uppercase tracking-widest">{diagLoading ? 'Mengecek API...' : 'Cek Koneksi & Billing'}</span>
+          </button>
+        )}
+      </div>
+
       <div className="bg-gradient-to-br from-[#5a823e] to-[#4a6b32] p-8 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-6">
@@ -156,7 +334,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
           </div>
-          
           <div className="flex items-end gap-2 mb-4">
             <span className="text-4xl font-black">{formatRupiah(totalSavings)}</span>
             <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg mb-2">Hemat {savingsPercent}%</span>
@@ -165,26 +342,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
             "Hebat! Bulan ini Sahabat berhasil menyisihkan dana dari budget belanja. Pertahankan masak sendiri untuk maksimalkan tabungan!"
           </p>
         </div>
-        <svg className="absolute -bottom-10 -right-10 w-48 h-48 opacity-10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.45 12.15l-2.62 2.62c-.39.39-1.02.39-1.41 0L6.79 14.15c-.39-.39-.39-1.02 0-1.41.39-.39 1.02-.39 1.41 0L10 14.53V7c0-.55.45-1 1-1s1 .45 1 1v7.53l1.79-1.79c.39-.39 1.02-.39 1.41 0 .4.39.4 1.03.25 1.41z" /></svg>
       </div>
 
-      {/* Today's Recipe AI Card */}
       <div className="bg-gradient-to-br from-orange-500 to-red-600 p-8 rounded-[3rem] shadow-2xl text-white relative overflow-hidden border border-white/20">
         <div className="relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
             <div className="flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-2">Ide Masakan Hari Ini • {new Date().toLocaleDateString('id-ID', { weekday: 'long' })}</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-2">Ide Masakan Hari Ini • {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
               <h3 className="text-4xl font-black mb-2 tracking-tight">{todayRecipe.title}</h3>
               <p className="text-xs font-semibold opacity-90 max-w-md leading-relaxed">{todayRecipe.description}</p>
             </div>
-            
             <div className="bg-white p-6 rounded-[2rem] text-orange-600 shadow-2xl shadow-black/20 transform hover:scale-105 transition-transform border-4 border-orange-100 flex flex-col items-center min-w-[180px]">
                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Perkiraan Total Biaya</span>
                <span className="text-3xl font-black tracking-tighter">{formatRupiah(todayRecipe.totalCost)}</span>
-               <div className="mt-2 w-8 h-1 bg-orange-200 rounded-full"></div>
             </div>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div className="bg-white text-gray-800 p-6 rounded-[2rem] shadow-sm">
                 <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -203,7 +375,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
                   ))}
                 </div>
              </div>
-
              <div className="bg-black/20 p-6 rounded-[2rem] border border-white/10 backdrop-blur-md">
                 <h4 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
@@ -255,39 +426,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
              </BarChart>
            </ResponsiveContainer>
          </div>
-         <div className="mt-4 flex justify-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#5a823e]"></div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Hemat</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Over Budget</span>
-            </div>
-         </div>
        </div>
-
        <div className="space-y-4">
          <div className="flex justify-between items-center px-2">
            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rincian Mingguan</p>
-           <button 
-             onClick={exportToPDF}
-             className="flex items-center gap-2 px-4 py-2 bg-[#5a823e] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-[#4a6b32] transition active:scale-95"
-           >
-             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-             Export PDF
-           </button>
+           <button onClick={exportToPDF} className="flex items-center gap-2 px-4 py-2 bg-[#5a823e] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md">Export PDF</button>
          </div>
          {MOCK_HISTORY.map((item, idx) => (
-           <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center hover:shadow-sm transition-shadow">
-             <div>
-               <p className="font-black text-gray-800 text-sm">{item.date}</p>
-               <p className="text-[10px] text-gray-400 font-bold">Budget: {formatNumber(item.budget)}</p>
-             </div>
-             <div className="text-right">
-               <p className={`font-black text-sm ${item.actual > item.budget ? 'text-red-500' : 'text-[#5a823e]'}`}>{formatRupiah(item.actual)}</p>
-               <p className="text-[10px] font-bold text-gray-400">{item.actual > item.budget ? 'Boros' : 'Hemat'}</p>
-             </div>
+           <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+             <div><p className="font-black text-gray-800 text-sm">{item.date}</p><p className="text-[10px] text-gray-400 font-bold">Budget: {formatNumber(item.budget)}</p></div>
+             <div className="text-right"><p className={`font-black text-sm ${item.actual > item.budget ? 'text-red-500' : 'text-[#5a823e]'}`}>{formatRupiah(item.actual)}</p></div>
            </div>
          ))}
        </div>
@@ -297,17 +445,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
   const renderFavorites = () => (
     <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-300">
        {MOCK_FAVORITES.map((item, idx) => (
-         <div key={idx} className="bg-white p-4 rounded-[1.5rem] border border-gray-100 shadow-sm hover:shadow-md transition active:scale-95 cursor-pointer">
+         <div key={idx} className="bg-white p-4 rounded-[1.5rem] border border-gray-100 shadow-sm active:scale-95 cursor-pointer">
            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mb-3 text-orange-500">
              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
            </div>
            <h4 className="font-black text-gray-800 text-sm leading-tight mb-2 line-clamp-2">{item.title}</h4>
            <p className="text-xs font-bold text-[#5a823e] mb-3">{formatRupiah(item.price)}</p>
-           <div className="flex flex-wrap gap-1">
-             {item.tags.map(tag => (
-               <span key={tag} className="px-2 py-0.5 bg-gray-50 text-gray-400 rounded-md text-[8px] font-black uppercase tracking-wide">{tag}</span>
-             ))}
-           </div>
          </div>
        ))}
     </div>
@@ -320,31 +463,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLogout }) => {
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-black text-gray-800 truncate">{user.name}</h2>
           <p className="text-xs text-gray-400 font-bold truncate mb-3">{user.email}</p>
-          <button 
-            onClick={onLogout}
-            className="px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition"
-          >
-            Keluar Akun
-          </button>
+          <button onClick={onLogout} className="px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Keluar Akun</button>
         </div>
       </div>
-
       <div className="flex gap-2 p-1.5 bg-white border border-gray-100 rounded-[2rem] w-full overflow-x-auto scrollbar-hide">
         {(['dashboard', 'history', 'favorites'] as const).map((tab) => (
-          <button 
-            key={tab} 
-            onClick={() => setActiveTab(tab)} 
-            className={`flex-1 py-3 px-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-[#5a823e] text-white shadow-lg shadow-green-100' : 'text-gray-400 hover:bg-gray-50'}`}
-          >
-            {tab === 'dashboard' ? 'Analisa AI' : tab === 'history' ? 'Riwayat' : 'Favorit'}
-          </button>
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 px-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-[#5a823e] text-white shadow-lg' : 'text-gray-400 hover:bg-gray-50'}`}>{tab === 'dashboard' ? 'Analisa AI' : tab === 'history' ? 'Riwayat' : 'Favorit'}</button>
         ))}
       </div>
-
       <div className="min-h-[300px]">
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'history' && renderHistory()}
         {activeTab === 'favorites' && renderFavorites()}
+      </div>
+
+      <div className="text-center px-10 mt-4">
+         <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest flex items-center justify-center gap-2">
+           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+           Data Bunda tersimpan aman di perangkat ini.
+         </p>
       </div>
     </div>
   );

@@ -1,136 +1,189 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { UserPreferences, GenerationResult, SourceLink } from "../types";
+import { UserPreferences, GenerationResult } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-const nutritionSchema = {
-  type: Type.OBJECT,
-  properties: {
-    calories: { type: Type.NUMBER, description: "Energi (Kkal)" },
-    protein: { type: Type.NUMBER, description: "Protein (Gram)" },
-    carbs: { type: Type.NUMBER, description: "Karbohidrat (Gram)" }
-  },
-  required: ["calories", "protein", "carbs"]
-};
-
-const ingredientSchema = {
-  type: Type.OBJECT,
-  properties: {
-    name: { type: Type.STRING },
-    quantity: { type: Type.STRING },
-    unitPrice: { type: Type.NUMBER },
-    totalPrice: { type: Type.NUMBER }
-  },
-  required: ["name", "quantity", "unitPrice", "totalPrice"]
-};
-
-const mealSchema = {
-  type: Type.OBJECT,
-  properties: {
-    title: { type: Type.STRING },
-    ingredients: { type: Type.ARRAY, items: ingredientSchema },
-    nutrition: nutritionSchema
-  },
-  required: ["title", "ingredients", "nutrition"]
+export const checkApiStatus = async (): Promise<{ status: 'ok' | 'error', message: string, model: string }> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const modelName = 'gemini-3-flash-preview';
+  try {
+    // Test panggilan ringan untuk cek API & Billing
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: 'Ping',
+      config: { 
+        maxOutputTokens: 10,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    });
+    if (response.text) {
+      return { status: 'ok', message: 'Koneksi Aktif & Billing Aman!', model: modelName };
+    }
+    return { status: 'error', message: 'API Terhubung tapi respon kosong.', model: modelName };
+  } catch (error: any) {
+    let msg = 'Gagal terhubung.';
+    if (error.message?.includes('402')) msg = 'Billing belum aktif / saldo habis.';
+    if (error.message?.includes('403')) msg = 'API Key tidak valid atau dilarang.';
+    if (error.message?.includes('429')) msg = 'Limit penggunaan terlampaui.';
+    return { status: 'error', message: msg, model: modelName };
+  }
 };
 
 export const generateMealPlan = async (prefs: UserPreferences, localOverrides?: Record<string, number>): Promise<GenerationResult> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const localPriceContext = localOverrides && Object.keys(localOverrides).length > 0 
     ? `Daftar HARGA PASAR LOKAL terbaru di ${prefs.city} (HASIL KONTRIBUSI WARGA): 
        ${Object.entries(localOverrides).map(([name, price]) => `- ${name}: Rp ${price}`).join('\n')}`
     : "Belum ada kontribusi harga warga untuk kota ini.";
 
   const prompt = `
-    Halo Gemini! Kamu sekarang adalah "AI Sahabat Belanja".
-    
-    TUGAS: Susun rencana menu makan keluarga di ${prefs.city} dengan gaya hidup "${prefs.lifestyle}".
-    
-    DATABASE MENU (INTERNAL): 
-    Gunakan referensi struktur menu dan variasi masakan dari khazanah kuliner Indonesia (seperti yang ada di cookpad.com/id). Pastikan menu yang kamu buat adalah masakan rumahan yang nyata, praktis, dan populer di Indonesia. Jangan sebutkan nama website "Cookpad" di dalam hasil teks atau analisis budget, gunakan hanya sebagai basis pengetahuan resepmu.
-
+    Halo! Kamu adalah asisten cerdas "AI Sahabat Belanja".
+    TUGAS UTAMA: Susun rencana menu makan keluarga di ${prefs.city} dengan gaya hidup "${prefs.lifestyle}".
     ATURAN GAYA HIDUP (${prefs.lifestyle}):
-    - Sederhana: Fokus pada protein nabati (tahu, tempe, telur), sayuran musiman yang murah, dan porsi yang efisien. Jarang daging hewani (maks 1-2x seminggu).
-    - Normal: Seimbang antara protein hewani (ayam, ikan) dan nabati. Sayuran bervariasi.
-    - Mewah: Gunakan protein premium (daging sapi, seafood), buah-buahan setiap hari, bumbu yang lebih kaya, dan variasi menu internasional/lokal yang kompleks.
-
-    ATURAN PRIORITAS HARGA:
-    1. PRIORITAS UTAMA: Gunakan data "${localPriceContext}".
-    2. PRIORITAS KEDUA: Referensi real-time dari pencarian web (Search Grounding) untuk harga pangan terbaru di daerah tersebut.
-
-    KONFIGURASI:
+    - Sederhana: Fokus pada protein nabati, sayuran musiman.
+    - Normal: Seimbang protein hewani dan nabati.
+    - Mewah: Protein premium, buah harian.
+    PARAMETER KELUARGA:
     - Budget Total: Rp ${prefs.budget}
     - Durasi: ${prefs.durationDays} Hari
     - Target: ${prefs.numberOfPeople} Orang (${prefs.portionsPerMeal}x makan/hari)
-
-    Pastikan total estimasi belanja dalam JSON output TIDAK MELEBIHI Budget Total.
-    Berikan respon JSON murni sesuai schema. Berikan budgetAnalysis yang ramah dalam bahasa Indonesia.
+    KONTEKS HARGA LOKAL:
+    ${localPriceContext}
+    1. Hitung biaya sangat teliti. 2. Berikan analisis jujur. 3. Nutrisi seimbang.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: prompt,
-    config: {
-      tools: [{ googleSearch: {} }],
-      responseMimeType: "application/json",
-      temperature: 0.2,
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          dailyPlans: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                day: { type: Type.INTEGER },
-                breakfast: mealSchema,
-                lunch: mealSchema,
-                dinner: mealSchema,
-                dailyTotal: nutritionSchema
-              },
-              required: ["day", "breakfast", "lunch", "dinner", "dailyTotal"]
-            }
-          },
-          shoppingList: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                quantity: { type: Type.STRING },
-                category: { type: Type.STRING },
-                estimatedPrice: { type: Type.NUMBER }
-              },
-              required: ["name", "quantity", "category", "estimatedPrice"]
-            }
-          },
-          totalEstimatedCost: { type: Type.NUMBER },
-          budgetAnalysis: { type: Type.STRING },
-          tips: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ["dailyPlans", "shoppingList", "totalEstimatedCost", "budgetAnalysis", "tips"]
-      }
-    }
-  });
-
   try {
-    const text = response.text || '{}';
-    const data = JSON.parse(text);
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            dailyPlans: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  day: { type: Type.INTEGER },
+                  breakfast: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      ingredients: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            name: { type: Type.STRING },
+                            quantity: { type: Type.STRING },
+                            unitPrice: { type: Type.NUMBER },
+                            totalPrice: { type: Type.NUMBER }
+                          },
+                          required: ["name", "quantity", "unitPrice", "totalPrice"]
+                        }
+                      },
+                      nutrition: {
+                        type: Type.OBJECT,
+                        properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } },
+                        required: ["calories", "protein", "carbs"]
+                      }
+                    },
+                    required: ["title", "ingredients", "nutrition"]
+                  },
+                  lunch: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      ingredients: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            name: { type: Type.STRING },
+                            quantity: { type: Type.STRING },
+                            unitPrice: { type: Type.NUMBER },
+                            totalPrice: { type: Type.NUMBER }
+                          },
+                          required: ["name", "quantity", "unitPrice", "totalPrice"]
+                        }
+                      },
+                      nutrition: {
+                        type: Type.OBJECT,
+                        properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } },
+                        required: ["calories", "protein", "carbs"]
+                      }
+                    },
+                    required: ["title", "ingredients", "nutrition"]
+                  },
+                  dinner: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      ingredients: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            name: { type: Type.STRING },
+                            quantity: { type: Type.STRING },
+                            unitPrice: { type: Type.NUMBER },
+                            totalPrice: { type: Type.NUMBER }
+                          },
+                          required: ["name", "quantity", "unitPrice", "totalPrice"]
+                        }
+                      },
+                      nutrition: {
+                        type: Type.OBJECT,
+                        properties: { calories: { type: Type.NUMBER }, protein: { type: Type.NUMBER }, carbs: { type: Type.NUMBER } },
+                        required: ["calories", "protein", "carbs"]
+                      }
+                    },
+                    required: ["title", "ingredients", "nutrition"]
+                  },
+                  dailyTotal: {
+                    type: Type.OBJECT,
+                    properties: {
+                      calories: { type: Type.NUMBER },
+                      protein: { type: Type.NUMBER },
+                      carbs: { type: Type.NUMBER }
+                    },
+                    required: ["calories", "protein", "carbs"]
+                  }
+                },
+                required: ["day", "breakfast", "lunch", "dinner", "dailyTotal"]
+              }
+            },
+            shoppingList: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  quantity: { type: Type.STRING },
+                  category: { type: Type.STRING },
+                  estimatedPrice: { type: Type.NUMBER }
+                },
+                required: ["name", "quantity", "category", "estimatedPrice"]
+              }
+            },
+            totalEstimatedCost: { type: Type.NUMBER },
+            budgetAnalysis: { type: Type.STRING },
+            tips: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["dailyPlans", "shoppingList", "totalEstimatedCost", "budgetAnalysis", "tips"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("AI tidak memberikan respon teks.");
+    return JSON.parse(text) as GenerationResult;
     
-    // Correctly extract search grounding chunks to provide source links as per guidelines
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (groundingChunks) {
-      data.sourceLinks = groundingChunks
-        .filter((chunk: any) => chunk.web)
-        .map((chunk: any) => ({
-          uri: chunk.web.uri,
-          title: chunk.web.title
-        }));
-    }
-    
-    return data;
   } catch (error) {
-    console.error("JSON Parsing Error:", error);
-    throw new Error("Gagal mengolah data belanja.");
+    console.error("AI Sahabat Belanja Error:", error);
+    throw new Error("Duh Bund, asisten AI lagi istirahat sebentar. Pastikan koneksi lancar lalu coba klik 'Susun Menu' lagi ya!");
   }
 };

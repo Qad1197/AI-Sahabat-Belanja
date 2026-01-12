@@ -55,12 +55,16 @@
     "recharts": "https://esm.sh/recharts@^3.6.0",
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "jspdf": "https://esm.sh/jspdf@^2.5.1"
+    "jspdf": "https://esm.sh/jspdf@^2.5.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.1"
   }
 }
 </script>
 </head>
 <body class="safe-top safe-bottom">
   <div id="root"></div>
+  <!-- Explicitly loading the entry point for standard hosting compatibility -->
+  <script type="module" src="index.tsx"></script>
 </body>
 </html>

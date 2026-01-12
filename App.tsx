@@ -7,11 +7,13 @@ import { PlanDisplay } from './components/PlanDisplay';
 import { PriceCorrection } from './components/PriceCorrection';
 import { HelpView } from './components/HelpView';
 import { ProfileView } from './components/ProfileView';
+import { AdminView } from './components/AdminView';
 
 export const formatNumber = (val: number) => new Intl.NumberFormat('id-ID').format(val);
 export const formatRupiah = (val: number) => `Rp ${formatNumber(val)}`;
 
 const BASE_API = "https://script.google.com/macros/s/AKfycbxs1FqCjGjl0EAgz4Q22qsmhxEQpFdSmu7MiUJMo0T9YIcdfNAenGnJAccdtPBHNzJ0Ow/exec";
+const ADMIN_PHONE = "08123456789";
 
 const LOADING_MESSAGES = [
   "Hai Bund! Sabar ya, lagi pilih sayur paling segar...",
@@ -22,11 +24,12 @@ const LOADING_MESSAGES = [
 ];
 
 const App: React.FC = () => {
-  const [activeView, setActiveView] = useState<'home' | 'correction' | 'profile' | 'help'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'correction' | 'profile' | 'help' | 'admin'>('home');
   const [loading, setLoading] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
   
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('asb_user_profile');
@@ -53,6 +56,14 @@ const App: React.FC = () => {
   const [locationSearch, setLocationSearch] = useState('');
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Trigger tutorial on first visit
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('asb_tutorial_seen');
+    if (!hasSeenTutorial) {
+      setTutorialStep(1);
+    }
+  }, []);
 
   useEffect(() => {
     let interval: any;
@@ -120,32 +131,23 @@ const App: React.FC = () => {
     e.preventDefault();
     if(!phoneInput) return;
     setAuthLoading(true);
+
+    const isAdmin = phoneInput === ADMIN_PHONE;
+    
     try {
-      const res = await fetch(`${BASE_API}?action=login`, {
-        method: "POST",
-        body: JSON.stringify({ phone: phoneInput })
-      });
-      const data = await res.json();
-      
-      const newUser: UserProfile = {
-        email: data.phone || phoneInput,
-        name: data.phone || phoneInput,
-        photo: `https://ui-avatars.com/api/?name=${data.phone || phoneInput}&background=40916C&color=fff`,
-        favorites: [],
-        history: []
-      };
-      setUser(newUser);
-      setPhoneInput("");
-    } catch (err) {
       const newUser: UserProfile = {
         email: phoneInput,
-        name: phoneInput,
-        photo: `https://ui-avatars.com/api/?name=${phoneInput}&background=40916C&color=fff`,
+        name: isAdmin ? "Administrator" : phoneInput,
+        role: isAdmin ? 'admin' : 'user',
+        photo: `https://ui-avatars.com/api/?name=${isAdmin ? "Admin" : phoneInput}&background=${isAdmin ? '000' : '40916C'}&color=fff`,
         favorites: [],
         history: []
       };
       setUser(newUser);
       setPhoneInput("");
+      if (isAdmin) setActiveView('admin');
+    } catch (err) {
+      setError("Login gagal. Periksa nomor Bunda ya!");
     } finally {
       setAuthLoading(false);
     }
@@ -173,8 +175,61 @@ const App: React.FC = () => {
     }
   };
 
+  const finishTutorial = () => {
+    setTutorialStep(null);
+    localStorage.setItem('asb_tutorial_seen', 'true');
+  };
+
   return (
     <div className="min-h-screen pb-40 bg-[#fdfdfb]">
+      {/* Tutorial Overlay System */}
+      {tutorialStep !== null && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 flex flex-col items-center justify-center p-6">
+          <div className="max-w-xs w-full bg-white rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in-95 duration-500 relative">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white p-4 rounded-full shadow-lg">
+              <span className="text-3xl">
+                {tutorialStep === 1 ? '📍' : tutorialStep === 2 ? '💰' : tutorialStep === 3 ? '👨‍👩‍👧' : '🚀'}
+              </span>
+            </div>
+            
+            <div className="text-center mt-4">
+              <h3 className="text-lg font-black text-gray-800 mb-2 leading-tight">
+                {tutorialStep === 1 && "Tentukan Lokasi Bunda"}
+                {tutorialStep === 2 && "Tentukan Budget Belanja"}
+                {tutorialStep === 3 && "Gaya Hidup & Keluarga"}
+                {tutorialStep === 4 && "Mulai Susun Menu!"}
+              </h3>
+              <p className="text-xs font-medium text-gray-500 leading-relaxed mb-8">
+                {tutorialStep === 1 && "Pilih kota tempat Bunda belanja agar AI Sahabat bisa menyesuaikan harga pangan lokal yang paling akurat."}
+                {tutorialStep === 2 && "Masukkan total anggaran belanja Bunda. AI akan memastikan gizi keluarga terpenuhi dalam budget ini."}
+                {tutorialStep === 3 && "Atur gaya hidup (Sederhana/Mewah) dan berapa jumlah orang yang akan makan masakan Bunda."}
+                {tutorialStep === 4 && "Klik tombol hijau besar di bawah untuk membiarkan asisten AI menyusun resep hemat & sehat untuk Bunda."}
+              </p>
+              
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => tutorialStep < 4 ? setTutorialStep(tutorialStep + 1) : finishTutorial()} 
+                  className="w-full py-4 bg-[#40916C] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-green-100"
+                >
+                  {tutorialStep === 4 ? "Selesai & Mulai" : "Lanjut"}
+                </button>
+                <button onClick={finishTutorial} className="py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Lewati Panduan</button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Animated Arrows pointing to inputs */}
+          <div className="absolute pointer-events-none transition-all duration-500" 
+            style={{ 
+              top: tutorialStep === 1 ? '22%' : tutorialStep === 2 ? '38%' : tutorialStep === 3 ? '55%' : '75%',
+              left: '50%',
+              transform: 'translateX(-50%)'
+            }}>
+            <div className="w-10 h-10 border-4 border-white border-t-transparent border-l-transparent rotate-45 animate-bounce"></div>
+          </div>
+        </div>
+      )}
+
       <header className="glass border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-5 h-20 flex items-center justify-between">
           <div 
@@ -182,7 +237,7 @@ const App: React.FC = () => {
             onClick={() => {setResult(null); setActiveView('home');}}
           >
             <div className="relative">
-              <div className="bg-gradient-to-tr from-[#40916C] via-[#52B788] to-[#FF9F1C] p-2.5 rounded-2xl shadow-lg shadow-green-100/30 group-hover:scale-110 group-active:scale-95 transition-all duration-300 animate-vibrant">
+              <div className={`p-2.5 rounded-2xl shadow-lg transition-all duration-300 animate-vibrant ${activeView === 'admin' ? 'bg-black' : 'bg-gradient-to-tr from-[#40916C] via-[#52B788] to-[#FF9F1C]'}`}>
                 <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M7.5 10V6C7.5 4.89543 8.39543 4 9.5 4H14.5C15.6046 4 16.5 4.89543 16.5 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   <path d="M2.5 10H21.5L19 21H5L2.5 10Z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
@@ -192,7 +247,7 @@ const App: React.FC = () => {
                   <path d="M15 10V21" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4"/>
                 </svg>
               </div>
-              <div className="absolute -top-1 -right-1 bg-[#FB8500] w-3.5 h-3.5 rounded-full border-2 border-white animate-pulse shadow-sm"></div>
+              <div className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white animate-pulse shadow-sm ${activeView === 'admin' ? 'bg-red-500' : 'bg-[#FB8500]'}`}></div>
             </div>
             <div className="flex flex-col">
               <h1 className="text-lg font-brand tracking-tight leading-none uppercase flex gap-1">
@@ -203,14 +258,18 @@ const App: React.FC = () => {
                 </div>
               </h1>
               <span className="text-[10px] font-bold text-gray-400 mt-1 transition-colors duration-300 lowercase">
-                dibuat oleh <span className="text-[#FB8500] font-black">WPR Studio</span>
+                {activeView === 'admin' ? <span className="text-red-600 font-black">ADMIN CONSOLE</span> : <>dibuat oleh <span className="text-[#FB8500] font-black">WPR Studio</span></>}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => setTutorialStep(1)} className="p-2.5 text-gray-400 hover:text-[#40916C] transition" title="Buka Panduan">
+               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
             {user ? (
-              <button onClick={() => setActiveView('profile')} className="flex items-center gap-2 bg-white pr-4 rounded-full border border-gray-100 hover:shadow-md transition p-1 shadow-sm">
+              <button onClick={() => setActiveView('profile')} className={`flex items-center gap-2 pr-4 rounded-full border transition p-1 shadow-sm ${activeView === 'admin' ? 'bg-black border-gray-800' : 'bg-white border-gray-100'}`}>
                 <img src={user.photo} className="w-8 h-8 rounded-full shadow-inner" alt="profile" />
+                {user.role === 'admin' && <span className="text-[9px] font-black text-red-500">ADMIN</span>}
               </button>
             ) : (
               <button onClick={() => setActiveView('profile')} className="bg-[#40916C] text-white px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-green-100 active:scale-95 transition-all">Masuk</button>
@@ -225,7 +284,8 @@ const App: React.FC = () => {
             {!result && !loading && (
               <form onSubmit={handleSubmit} className="bg-white p-7 rounded-[3rem] shadow-xl shadow-green-900/5 border border-gray-50 space-y-7 animate-in fade-in zoom-in-95 duration-500">
                 <div className="space-y-6">
-                  <div className="bg-[#f2fcf6] p-6 rounded-[2.5rem] border border-green-50 relative" ref={locationDropdownRef}>
+                  {/* STEP 1: CITY */}
+                  <div className={`bg-[#f2fcf6] p-6 rounded-[2.5rem] border border-green-50 relative transition-all duration-500 ${tutorialStep === 1 ? 'ring-4 ring-green-400 shadow-xl z-[110] bg-white' : ''}`} ref={locationDropdownRef}>
                      <label className="text-[11px] font-bold text-[#40916C] uppercase tracking-[0.1em] block mb-3">🛍️ Lokasi Belanja Bund</label>
                      <div 
                         className="w-full bg-transparent font-bold text-gray-800 text-lg flex items-center justify-between cursor-pointer group"
@@ -236,7 +296,7 @@ const App: React.FC = () => {
                      </div>
                      
                      {isLocationDropdownOpen && (
-                       <div className="absolute left-0 right-0 top-full mt-3 z-[60] bg-white border border-gray-100 rounded-[2.5rem] shadow-2xl p-4 animate-in slide-in-from-top-3 duration-300">
+                       <div className="absolute left-0 right-0 top-full mt-3 z-[120] bg-white border border-gray-100 rounded-[2.5rem] shadow-2xl p-4 animate-in slide-in-from-top-3 duration-300">
                          <div className="relative mb-4">
                            <input 
                               type="text" 
@@ -273,7 +333,8 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="bg-[#fff9f2] p-6 rounded-[2.5rem] border border-orange-50 group transition-all focus-within:ring-4 focus-within:ring-[#FB8500]/10">
+                    {/* STEP 2: BUDGET */}
+                    <div className={`bg-[#fff9f2] p-6 rounded-[2.5rem] border border-orange-50 group transition-all focus-within:ring-4 focus-within:ring-[#FB8500]/10 ${tutorialStep === 2 ? 'ring-4 ring-orange-400 shadow-xl z-[110] bg-white' : ''}`}>
                       <label className="text-[11px] font-bold text-[#FB8500] uppercase tracking-[0.1em] block mb-3">💰 Budget Bunda (Rp)</label>
                       <input 
                         type="text" 
@@ -286,7 +347,8 @@ const App: React.FC = () => {
                         className="w-full bg-transparent font-bold text-[#FB8500] outline-none text-2xl" 
                       />
                     </div>
-                    <div className="bg-[#f2fcf6] p-6 rounded-[2.5rem] border border-green-50">
+                    {/* STEP 3: LIFESTYLE */}
+                    <div className={`bg-[#f2fcf6] p-6 rounded-[2.5rem] border border-green-50 transition-all ${tutorialStep === 3 ? 'ring-4 ring-green-400 shadow-xl z-[110] bg-white' : ''}`}>
                        <label className="text-[11px] font-bold text-[#40916C] uppercase tracking-[0.1em] block mb-3">🍽️ Gaya Menu</label>
                        <div className="flex gap-2">
                           {[Lifestyle.SEDERHANA, Lifestyle.NORMAL, Lifestyle.MEWAH].map(l => (
@@ -304,7 +366,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className={`grid grid-cols-3 gap-4 transition-all ${tutorialStep === 3 ? 'ring-4 ring-blue-400 p-2 rounded-[2.5rem] shadow-xl z-[110] bg-white' : ''}`}>
                     <div className="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-100 text-center">
                        <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Hari</label>
                        <input type="number" value={prefs.durationDays} onChange={(e) => setPrefs({...prefs, durationDays: parseInt(e.target.value)})} className="w-full bg-transparent text-center font-bold text-xl outline-none" />
@@ -345,10 +407,11 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
+                {/* STEP 4: ACTION */}
                 <button 
                   type="submit" 
                   disabled={budgetAnalysis.isDisabled}
-                  className={`w-full py-5 rounded-[2.5rem] font-bold text-sm uppercase tracking-widest shadow-2xl transition-all duration-500 transform active:scale-95 ${budgetAnalysis.isDisabled ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#40916C] to-[#52B788] text-white hover:shadow-green-200 animate-vibrant'}`}
+                  className={`w-full py-5 rounded-[2.5rem] font-bold text-sm uppercase tracking-widest shadow-2xl transition-all duration-500 transform active:scale-95 ${budgetAnalysis.isDisabled ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#40916C] to-[#52B788] text-white hover:shadow-green-200 animate-vibrant'} ${tutorialStep === 4 ? 'ring-4 ring-green-400 scale-105 z-[110]' : ''}`}
                 >
                   {budgetAnalysis.isDisabled ? 'Budget Terlalu Rendah' : 'Susun Rencana Menu Bunda! 🥦'}
                 </button>
@@ -410,10 +473,15 @@ const App: React.FC = () => {
                   onLogout={() => {
                     localStorage.removeItem('asb_user_profile'); 
                     setUser(null);
+                    setActiveView('home');
                   }} 
                 />
              )}
           </div>
+        )}
+
+        {activeView === 'admin' && user?.role === 'admin' && (
+           <AdminView priceOverrides={priceOverrides} onBack={() => setActiveView('home')} />
         )}
 
         {activeView === 'correction' && (
@@ -424,7 +492,6 @@ const App: React.FC = () => {
           <HelpView onBack={() => setActiveView('home')} />
         )}
 
-        {/* FOOTER DEDICATION */}
         <footer className="mt-16 mb-8 text-center px-6">
           <div className="w-12 h-1 bg-gradient-to-r from-green-100 via-green-200 to-green-100 rounded-full mx-auto mb-6"></div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 mb-2">
@@ -449,6 +516,14 @@ const App: React.FC = () => {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider">Koreksi</span>
          </button>
+         {user?.role === 'admin' && (
+            <button onClick={() => setActiveView('admin')} className={`flex-1 p-2 transition flex flex-col items-center gap-1.5 group ${activeView === 'admin' ? 'text-black' : 'text-gray-300 hover:text-gray-400'}`}>
+              <div className={`p-2.5 rounded-2xl transition-all duration-300 ${activeView === 'admin' ? 'bg-black text-white scale-110' : 'group-hover:bg-gray-50'}`}>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={activeView === 'admin' ? 3 : 2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider">Admin</span>
+            </button>
+         )}
          <button onClick={() => setActiveView('help')} className={`flex-1 p-2 transition flex flex-col items-center gap-1.5 group ${activeView === 'help' ? 'text-blue-500' : 'text-gray-300 hover:text-gray-400'}`}>
             <div className={`p-2.5 rounded-2xl transition-all duration-300 ${activeView === 'help' ? 'bg-blue-500/10 scale-110' : 'group-hover:bg-gray-50'}`}>
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={activeView === 'help' ? 3 : 2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

@@ -72,6 +72,7 @@ export interface HistoryItem {
 export interface UserProfile {
   email: string;
   name: string;
+  role: 'user' | 'admin';
   photo?: string;
   favorites: HistoryItem[];
   history: HistoryItem[];
